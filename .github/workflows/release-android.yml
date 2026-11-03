@@ -97,9 +97,15 @@ jobs:
         run: |
           "$GODOT_BIN" --headless --path . --editor --quit
 
-      - name: Validate scenes and scripts
+      - name: Validate all screens and voice interactions
+        shell: bash
         run: |
-          "$GODOT_BIN" --headless --path . --script res://tests/smoke.gd
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --script res://tests/smoke.gd 2>&1 | tee /tmp/pokemon-kids-smoke.log
+          if grep -Eq 'SCRIPT ERROR:|ERROR:' /tmp/pokemon-kids-smoke.log; then
+            echo '::error::Godot emitted script/runtime errors during smoke tests'
+            exit 1
+          fi
 
       - name: Build signed APK and verify Android signature
         shell: bash
