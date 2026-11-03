@@ -1,4 +1,4 @@
-name: Build signed APK - keep latest release only
+name: Pokemon Kids - signed Android APK (keep latest)
 
 on:
   push:
@@ -9,20 +9,20 @@ permissions:
   contents: write
 
 concurrency:
-  group: farm-android-release
+  group: pokemon-kids-release
   cancel-in-progress: false
 
 jobs:
   android-release:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 50
     env:
       GODOT_VERSION: '4.5.2'
       GODOT_CHANNEL: 'stable'
       GODOT_BIN: /tmp/godot
-      APK_PATH: build/AnimalAdventureIsland.apk
+      APK_PATH: build/PokemonKids.apk
     steps:
-      - name: Checkout Farm
+      - name: Checkout brand-new Pokemon Kids project
         uses: actions/checkout@v4
 
       - name: Set up Java 17
@@ -31,10 +31,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Validate source JSON
+      - name: Validate 9 Pokemon data records
         run: python3 tests/check_data.py
 
-      - name: Install Godot and Android export templates
+      - name: Fetch Pokemon artwork and Traditional Chinese font
+        run: python3 tools/download_assets.py
+
+      - name: Install Godot 4.5.2 and Android export templates
         shell: bash
         run: |
           set -euo pipefail
@@ -44,10 +47,10 @@ jobs:
           mv "$RUNNER_TEMP/Godot_v${GODOT_VERSION}-${GODOT_CHANNEL}_linux.x86_64" "$GODOT_BIN"
           chmod +x "$GODOT_BIN"
           curl --fail --location --retry 3 "${release_url}/Godot_v${GODOT_VERSION}-${GODOT_CHANNEL}_export_templates.tpz" -o /tmp/export_templates.tpz
-          mkdir -p /tmp/farm_templates
-          unzip -q /tmp/export_templates.tpz -d /tmp/farm_templates
+          mkdir -p /tmp/pokemon-kids-templates
+          unzip -q /tmp/export_templates.tpz -d /tmp/pokemon-kids-templates
           mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_CHANNEL}"
-          cp -a /tmp/farm_templates/templates/. "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_CHANNEL}/"
+          cp -a /tmp/pokemon-kids-templates/templates/. "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_CHANNEL}/"
           "$GODOT_BIN" --version
 
       - name: Install Android SDK packages and configure Godot
@@ -57,15 +60,15 @@ jobs:
           "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
             'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
           mkdir -p "$HOME/.config/godot"
-          cat > "$HOME/.config/godot/editor_settings-4.5.tres" <<EOF
+          cat > "$HOME/.config/godot/editor_settings-4.5.tres" <<SETTINGS
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
           export/android/java_sdk_path = "${JAVA_HOME}"
           export/android/android_sdk_path = "${ANDROID_HOME}"
-          EOF
+          SETTINGS
 
-      - name: Restore release signing key from Actions Secrets
+      - name: Restore APK signing key from GitHub Actions Secrets
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -74,61 +77,56 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${KEYSTORE_BASE64}" || -z "${KEYSTORE_PASSWORD}" || -z "${KEY_ALIAS}" || -z "${KEY_PASSWORD}" ]]; then
-            echo '::error::Please set KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD in Actions Secrets'
+          if [[ -z "$KEYSTORE_BASE64" || -z "$KEYSTORE_PASSWORD" || -z "$KEY_ALIAS" || -z "$KEY_PASSWORD" ]]; then
+            echo '::error::Missing KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS or KEY_PASSWORD'
             exit 1
           fi
-          if [[ "${KEYSTORE_PASSWORD}" != "${KEY_PASSWORD}" ]]; then
-            echo '::error::Godot 4.5 requires equal store/key passwords for Android export'
+          if [[ "$KEYSTORE_PASSWORD" != "$KEY_PASSWORD" ]]; then
+            echo '::error::Godot Android requires equal keystore and key passwords'
             exit 1
           fi
-          install -d -m 700 "$RUNNER_TEMP/farm-signing"
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/farm-signing/release.keystore"
-          test -s "$RUNNER_TEMP/farm-signing/release.keystore"
-          chmod 600 "$RUNNER_TEMP/farm-signing/release.keystore"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/farm-signing/release.keystore" >> "$GITHUB_ENV"
+          install -d -m 700 "$RUNNER_TEMP/pokemon-kids-signing"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/pokemon-kids-signing/release.keystore"
+          test -s "$RUNNER_TEMP/pokemon-kids-signing/release.keystore"
+          chmod 600 "$RUNNER_TEMP/pokemon-kids-signing/release.keystore"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/pokemon-kids-signing/release.keystore" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
 
-      - name: Import Godot resources
-        shell: bash
-        run: |
-          "$GODOT_BIN" --headless --path . --editor --quit
+      - name: Import graphics and fonts into Godot
+        run: "$GODOT_BIN" --headless --path . --editor --quit
 
-      - name: Validate Godot main scene and scripts
-        shell: bash
-        run: |
-          "$GODOT_BIN" --headless --path . --script res://tests/smoke.gd
+      - name: Validate scenes and scripts
+        run: "$GODOT_BIN" --headless --path . --script res://tests/smoke.gd
 
-      - name: Export signed Android APK and verify signature
+      - name: Build signed APK and verify Android signature
         shell: bash
         run: |
           set -euo pipefail
-          version_code=$((405 + GITHUB_RUN_NUMBER))
-          sed -i -E "s@^version/code=.*@version/code=${version_code}@" export_presets.cfg
-          sed -i -E "s@^version/name=.*@version/name=\"0.6.${version_code}-rebuild\"@" export_presets.cfg
+          code=$((600 + GITHUB_RUN_NUMBER))
+          sed -i -E "s@^version/code=.*@version/code=${code}@" export_presets.cfg
+          sed -i -E "s@^version/name=.*@version/name=\"1.0.${GITHUB_RUN_NUMBER}\"@" export_presets.cfg
           mkdir -p build
           "$GODOT_BIN" --headless --path . --export-release Android "$APK_PATH"
           test -s "$APK_PATH"
           "${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK_PATH"
           sha256sum "$APK_PATH"
 
-      - name: Publish newest release and remove ALL older releases
+      - name: Publish latest Release and delete old Releases and tags
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="farm-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
-          gh release create "$tag" "$APK_PATH#AnimalAdventureIsland.apk" \
+          tag="pokemon-kids-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          gh release create "$tag" "$APK_PATH#PokemonKids.apk" \
             --target "$GITHUB_SHA" \
-            --title "Farm Android ${GITHUB_RUN_NUMBER} (latest)" \
-            --notes 'Signed APK built with GitHub Actions Secrets. APK-reference editable reconstruction.' \
+            --title "寶可夢小小探險隊 - 最新版 ${GITHUB_RUN_NUMBER}" \
+            --notes '4歲語音互動寶可夢遊戲：九隻朋友、圖鑑、尋找猜猜樂、照顧遊戲與愛心貼紙。非官方私人作品。' \
             --latest
-          # Delete only after a verified, signed replacement has been published.
           while IFS= read -r old_tag; do
             if [[ -n "$old_tag" && "$old_tag" != "$tag" ]]; then
               gh release delete "$old_tag" --yes --cleanup-tag
             fi
           done < <(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq '.[].tag_name')
-          echo "Kept only release: $tag"
+          echo "Latest published: $tag"

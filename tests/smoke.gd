@@ -1,16 +1,16 @@
 extends SceneTree
 
 func _initialize() -> void:
-	var scene: PackedScene = load("res://scenes/Main.tscn")
-	if scene == null:
-		push_error("Main scene failed to load")
-		quit(1)
-		return
-	var main = scene.instantiate()
-	if main == null:
-		push_error("Main scene failed to instantiate")
-		quit(1)
-		return
-	main.free()
-	print("Farm scripts and Main scene parsed OK")
-	quit(0)
+    var scene := load("res://scenes/Main.tscn")
+    if scene == null:
+        push_error("Main scene could not load")
+        quit(1)
+        return
+    var instance := scene.instantiate()
+    if instance == null:
+        push_error("Main scene could not instantiate")
+        quit(1)
+        return
+    print("PASS: Main scene and GDScript loaded")
+    instance.free()
+    quit(0)

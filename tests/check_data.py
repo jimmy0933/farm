@@ -1,17 +1,12 @@
-#!/usr/bin/env python3
-"""Host-side integrity checks for APK-derived data."""
-from pathlib import Path
 import json
-ROOT = Path(__file__).resolve().parents[1]
-expected = {"animals":43,"birds":12,"monsters":12,"levels":43,"pokemon":13}
-for name,count in expected.items():
-    records=json.loads((ROOT/'data'/f'{name}.json').read_text(encoding='utf8'))
-    assert len(records)==count, (name,len(records),count)
-    ids=[x['id'] for x in records]
-    assert len(set(ids))==len(ids), f'duplicate id in {name}'
-    print(f'{name}: {len(records)} records OK')
-animals={x['id'] for x in json.loads((ROOT/'data'/'animals.json').read_text())}
-levels=json.loads((ROOT/'data'/'levels.json').read_text())
-assert all(l['animal'] in animals for l in levels)
-assert all(l['answer'] in l['options'] for l in levels)
-print('quiz animal references and correct answers OK')
+from pathlib import Path
+p = Path(__file__).resolve().parents[1] / 'data/pokemon.json'
+mons = json.loads(p.read_text('utf8'))
+expected = {25,94,133,103,810,7,79,574,4}
+assert len(mons) == len(expected) == 9
+assert {m['id'] for m in mons} == expected
+for m in mons:
+    assert all(k in m for k in ('name','intro','height','weight','types','ability','moves','question','fun'))
+    assert m['height'] > 0 and m['weight'] > 0 and len(m['moves']) >= 2
+    assert all(a['name'] and a['description'] for a in m['ability'] + m['moves'])
+print('PASS: nine Pokemon with descriptive attributes, measurements, abilities and moves')
