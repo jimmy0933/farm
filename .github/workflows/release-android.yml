@@ -94,10 +94,12 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Import graphics and fonts into Godot
-        run: "$GODOT_BIN" --headless --path . --editor --quit
+        run: |
+          "$GODOT_BIN" --headless --path . --editor --quit
 
       - name: Validate scenes and scripts
-        run: "$GODOT_BIN" --headless --path . --script res://tests/smoke.gd
+        run: |
+          "$GODOT_BIN" --headless --path . --script res://tests/smoke.gd
 
       - name: Build signed APK and verify Android signature
         shell: bash
