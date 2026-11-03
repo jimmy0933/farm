@@ -1,0 +1,28 @@
+; A new editable Godot project reconstructed using assets/data from the supplied APK.
+; This is not the exact original game source, which was distributed as compiled .gdc.
+config_version=5
+
+[application]
+config/name="動物探險島"
+config/description="可編輯重建版：動物圖鑑、寶可夢、私人農場、挑戰、簡易賽車"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+config/icon="res://assets/icon.png"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+
+[audio]
+general/text_to_speech=true
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+
+[gui]
+common/drop_mouse_on_gui_input_disabled=true

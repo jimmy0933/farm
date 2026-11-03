@@ -1,0 +1,518 @@
+[
+  {
+    "id": 1,
+    "animal": "cow",
+    "type": "sound",
+    "prompt": "聽一聽，找出「乳牛」！",
+    "options": [
+      "cow",
+      "pig",
+      "duck"
+    ],
+    "answer": "cow"
+  },
+  {
+    "id": 2,
+    "animal": "pig",
+    "type": "food",
+    "prompt": "選出適合「小豬」的食物。",
+    "options": [
+      "飼料",
+      "巧克力",
+      "糖果"
+    ],
+    "answer": "飼料"
+  },
+  {
+    "id": 3,
+    "animal": "sheep",
+    "type": "habitat",
+    "prompt": "幫「綿羊」找到正確的家。",
+    "options": [
+      "farm",
+      "forest",
+      "ocean"
+    ],
+    "answer": "farm"
+  },
+  {
+    "id": 4,
+    "animal": "chicken",
+    "type": "sound",
+    "prompt": "聽一聽，找出「公雞」！",
+    "options": [
+      "chicken",
+      "duck",
+      "cow"
+    ],
+    "answer": "chicken"
+  },
+  {
+    "id": 5,
+    "animal": "duck",
+    "type": "food",
+    "prompt": "選出適合「鴨子」的食物。",
+    "options": [
+      "穀粒",
+      "糖果",
+      "洋蔥"
+    ],
+    "answer": "穀粒"
+  },
+  {
+    "id": 6,
+    "animal": "horse",
+    "type": "habitat",
+    "prompt": "幫「馬」找到正確的家。",
+    "options": [
+      "farm",
+      "forest",
+      "ocean"
+    ],
+    "answer": "farm"
+  },
+  {
+    "id": 7,
+    "animal": "rabbit",
+    "type": "food",
+    "prompt": "選出適合「兔子」的食物。",
+    "options": [
+      "牧草",
+      "巧克力",
+      "糖果"
+    ],
+    "answer": "牧草"
+  },
+  {
+    "id": 8,
+    "animal": "squirrel",
+    "type": "habitat",
+    "prompt": "幫松鼠找到森林的家。",
+    "options": [
+      "farm",
+      "forest",
+      "ocean"
+    ],
+    "answer": "forest"
+  },
+  {
+    "id": 9,
+    "animal": "fox",
+    "type": "habitat",
+    "prompt": "幫「狐狸」找到正確的家。",
+    "options": [
+      "farm",
+      "forest",
+      "ocean"
+    ],
+    "answer": "forest"
+  },
+  {
+    "id": 10,
+    "animal": "deer",
+    "type": "habitat",
+    "prompt": "幫「鹿」找到正確的家。",
+    "options": [
+      "farm",
+      "forest",
+      "ocean"
+    ],
+    "answer": "forest"
+  },
+  {
+    "id": 11,
+    "animal": "bear",
+    "type": "food",
+    "prompt": "選出適合「熊」的食物。",
+    "options": [
+      "果實",
+      "糖果",
+      "汽水"
+    ],
+    "answer": "果實"
+  },
+  {
+    "id": 12,
+    "animal": "owl",
+    "type": "sound",
+    "prompt": "聽一聽，找出「貓頭鷹」！",
+    "options": [
+      "owl",
+      "duck",
+      "bear"
+    ],
+    "answer": "owl"
+  },
+  {
+    "id": 13,
+    "animal": "hedgehog",
+    "type": "habitat",
+    "prompt": "幫刺蝟找到森林的家。",
+    "options": [
+      "farm",
+      "forest",
+      "ocean"
+    ],
+    "answer": "forest"
+  },
+  {
+    "id": 14,
+    "animal": "raccoon",
+    "type": "food",
+    "prompt": "找找看浣熊會吃什麼？",
+    "options": [
+      "果實",
+      "巧克力",
+      "汽水"
+    ],
+    "answer": "果實"
+  },
+  {
+    "id": 15,
+    "animal": "boar",
+    "type": "food",
+    "prompt": "選出野豬可以吃的食物。",
+    "options": [
+      "根莖",
+      "糖果",
+      "汽水"
+    ],
+    "answer": "根莖"
+  },
+  {
+    "id": 16,
+    "animal": "monkey",
+    "type": "food",
+    "prompt": "幫猴子選適合的食物。",
+    "options": [
+      "香蕉",
+      "巧克力",
+      "洋蔥"
+    ],
+    "answer": "香蕉"
+  },
+  {
+    "id": 17,
+    "animal": "snake",
+    "type": "habitat",
+    "prompt": "幫蛇找到森林的家。",
+    "options": [
+      "forest",
+      "farm",
+      "ocean"
+    ],
+    "answer": "forest"
+  },
+  {
+    "id": 18,
+    "animal": "guinea_pig",
+    "type": "food",
+    "prompt": "天竺鼠的主食是什麼？",
+    "options": [
+      "牧草",
+      "糖果",
+      "巧克力"
+    ],
+    "answer": "牧草"
+  },
+  {
+    "id": 19,
+    "animal": "meerkat",
+    "type": "food",
+    "prompt": "狐獴最愛吃什麼？",
+    "options": [
+      "昆蟲",
+      "巧克力",
+      "汽水"
+    ],
+    "answer": "昆蟲"
+  },
+  {
+    "id": 20,
+    "animal": "clownfish",
+    "type": "habitat",
+    "prompt": "小丑魚住在哪裡？",
+    "options": [
+      "ocean",
+      "forest",
+      "farm"
+    ],
+    "answer": "ocean"
+  },
+  {
+    "id": 21,
+    "animal": "sea_turtle",
+    "type": "food",
+    "prompt": "海龜可以吃什麼？",
+    "options": [
+      "海草",
+      "糖果",
+      "巧克力"
+    ],
+    "answer": "海草"
+  },
+  {
+    "id": 22,
+    "animal": "dolphin",
+    "type": "habitat",
+    "prompt": "海豚住在哪裡？",
+    "options": [
+      "farm",
+      "ocean",
+      "forest"
+    ],
+    "answer": "ocean"
+  },
+  {
+    "id": 23,
+    "animal": "octopus",
+    "type": "habitat",
+    "prompt": "章魚住在哪裡？",
+    "options": [
+      "forest",
+      "ocean",
+      "farm"
+    ],
+    "answer": "ocean"
+  },
+  {
+    "id": 24,
+    "animal": "seahorse",
+    "type": "food",
+    "prompt": "海馬會吃什麼？",
+    "options": [
+      "小型甲殼類",
+      "糖果",
+      "汽水"
+    ],
+    "answer": "小型甲殼類"
+  },
+  {
+    "id": 25,
+    "animal": "pufferfish",
+    "type": "habitat",
+    "prompt": "河豚住在哪裡？",
+    "options": [
+      "ocean",
+      "farm",
+      "forest"
+    ],
+    "answer": "ocean"
+  },
+  {
+    "id": 26,
+    "animal": "camel",
+    "type": "food",
+    "prompt": "駱駝可以吃什麼？",
+    "options": [
+      "牧草",
+      "巧克力",
+      "糖果"
+    ],
+    "answer": "牧草"
+  },
+  {
+    "id": 27,
+    "animal": "lion",
+    "type": "food",
+    "prompt": "獅子喜歡吃什麼？",
+    "options": [
+      "肉",
+      "牧草",
+      "香蕉"
+    ],
+    "answer": "肉"
+  },
+  {
+    "id": 28,
+    "animal": "tiger",
+    "type": "food",
+    "prompt": "老虎喜歡吃什麼？",
+    "options": [
+      "魚",
+      "肉",
+      "糖果"
+    ],
+    "answer": "肉"
+  },
+  {
+    "id": 29,
+    "animal": "elephant",
+    "type": "food",
+    "prompt": "大象喜歡吃什麼？",
+    "options": [
+      "青草",
+      "巧克力",
+      "肉"
+    ],
+    "answer": "青草"
+  },
+  {
+    "id": 30,
+    "animal": "hippo",
+    "type": "food",
+    "prompt": "河馬喜歡吃什麼？",
+    "options": [
+      "青草",
+      "蛋糕",
+      "魚"
+    ],
+    "answer": "青草"
+  },
+  {
+    "id": 31,
+    "animal": "seal",
+    "type": "food",
+    "prompt": "海豹常吃什麼？",
+    "options": [
+      "魚",
+      "牧草",
+      "香蕉"
+    ],
+    "answer": "魚"
+  },
+  {
+    "id": 32,
+    "animal": "rhinoceros_beetle",
+    "type": "food",
+    "prompt": "找找看，獨角仙會吃什麼？",
+    "options": [
+      "果實",
+      "糖果",
+      "洋蔥"
+    ],
+    "answer": "果實"
+  },
+  {
+    "id": 33,
+    "animal": "stag_beetle",
+    "type": "food",
+    "prompt": "找找看，鍬形蟲會吃什麼？",
+    "options": [
+      "果實",
+      "巧克力",
+      "汽水"
+    ],
+    "answer": "果實"
+  },
+  {
+    "id": 34,
+    "animal": "butterfly",
+    "type": "food",
+    "prompt": "找找看，蝴蝶會吃什麼？",
+    "options": [
+      "花蜜",
+      "肉",
+      "乾草"
+    ],
+    "answer": "花蜜"
+  },
+  {
+    "id": 35,
+    "animal": "ladybug",
+    "type": "food",
+    "prompt": "找找看，瓢蟲會吃什麼？",
+    "options": [
+      "蚜蟲",
+      "糖果",
+      "青草"
+    ],
+    "answer": "蚜蟲"
+  },
+  {
+    "id": 36,
+    "animal": "bee",
+    "type": "food",
+    "prompt": "找找看，蜜蜂會吃什麼？",
+    "options": [
+      "花蜜",
+      "肉",
+      "洋蔥"
+    ],
+    "answer": "花蜜"
+  },
+  {
+    "id": 37,
+    "animal": "mantis",
+    "type": "food",
+    "prompt": "找找看，螳螂會吃什麼？",
+    "options": [
+      "昆蟲",
+      "果實",
+      "巧克力"
+    ],
+    "answer": "昆蟲"
+  },
+  {
+    "id": 38,
+    "animal": "dung_beetle",
+    "type": "food",
+    "prompt": "糞金龜會把什麼滾成圓球？",
+    "options": [
+      "動物糞便",
+      "糖果",
+      "花蜜"
+    ],
+    "answer": "動物糞便"
+  },
+  {
+    "id": 39,
+    "animal": "weevil",
+    "type": "food",
+    "prompt": "象鼻蟲喜歡吃什麼？",
+    "options": [
+      "葉子",
+      "糖果",
+      "肉"
+    ],
+    "answer": "葉子"
+  },
+  {
+    "id": 40,
+    "animal": "axolotl",
+    "type": "habitat",
+    "prompt": "娃娃魚（美西螈）住在什麼水中環境？",
+    "options": [
+      "ocean",
+      "forest",
+      "farm"
+    ],
+    "answer": "ocean"
+  },
+  {
+    "id": 41,
+    "animal": "dog",
+    "type": "habitat",
+    "prompt": "狗狗在哪個小動物樂園交朋友？",
+    "options": [
+      "cola",
+      "ocean",
+      "forest"
+    ],
+    "answer": "cola"
+  },
+  {
+    "id": 42,
+    "animal": "cat",
+    "type": "habitat",
+    "prompt": "貓咪的家在哪一個樂園？",
+    "options": [
+      "cola",
+      "farm",
+      "ocean"
+    ],
+    "answer": "cola"
+  },
+  {
+    "id": 43,
+    "animal": "golden_hamster",
+    "type": "habitat",
+    "prompt": "黃金鼠喜歡住在哪個小動物樂園？",
+    "options": [
+      "cola",
+      "zoo",
+      "ocean"
+    ],
+    "answer": "cola"
+  }
+]

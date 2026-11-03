@@ -1,0 +1,250 @@
+[
+  {
+    "id": "pikachu",
+    "name": "皮卡丘",
+    "types": [
+      "電氣"
+    ],
+    "weaknesses": [
+      "地面"
+    ],
+    "color": "#FFF0AA",
+    "area": "meadow",
+    "food": "甜甜樹果",
+    "skill": "十萬伏特",
+    "desc": "活潑又愛玩，開心時會放出金色電光。",
+    "height_m": 0.4,
+    "weight_kg": 6.0
+  },
+  {
+    "id": "psyduck",
+    "name": "可達鴨",
+    "types": [
+      "水"
+    ],
+    "weaknesses": [
+      "草",
+      "電氣"
+    ],
+    "color": "#FFF1BD",
+    "area": "pond",
+    "skill": "念力",
+    "desc": "常常抱著頭發呆，最喜歡到水池邊玩水。",
+    "height_m": 0.8,
+    "weight_kg": 19.6
+  },
+  {
+    "id": "squirtle",
+    "name": "傑尼龜",
+    "types": [
+      "水"
+    ],
+    "weaknesses": [
+      "草",
+      "電氣"
+    ],
+    "color": "#D7F5FF",
+    "area": "pond",
+    "skill": "水槍",
+    "desc": "背著圓圓龜殼，最喜歡在池塘旁戲水。",
+    "height_m": 0.5,
+    "weight_kg": 9.0
+  },
+  {
+    "id": "charmander",
+    "name": "小火龍",
+    "types": [
+      "火"
+    ],
+    "weaknesses": [
+      "水",
+      "地面",
+      "岩石"
+    ],
+    "color": "#FFE7CB",
+    "area": "fire",
+    "skill": "火花",
+    "desc": "尾巴有暖暖的小火苗，會陪你在草地上奔跑。",
+    "height_m": 0.6,
+    "weight_kg": 8.5
+  },
+  {
+    "id": "mamoswine",
+    "name": "象牙豬",
+    "types": [
+      "冰",
+      "地面"
+    ],
+    "weaknesses": [
+      "火",
+      "水",
+      "草",
+      "格鬥",
+      "鋼"
+    ],
+    "color": "#DAE7F1",
+    "area": "meadow",
+    "skill": "冰礫",
+    "desc": "長著大大的彎彎象牙，踩著厚實腳步在草原散步。",
+    "height_m": 2.5,
+    "weight_kg": 291.0
+  },
+  {
+    "id": "eevee",
+    "name": "伊布",
+    "types": [
+      "一般"
+    ],
+    "weaknesses": [
+      "格鬥"
+    ],
+    "color": "#F5E6CB",
+    "area": "meadow",
+    "skill": "電光一閃",
+    "desc": "毛茸茸的小夥伴，搖著大尾巴跑過來撒嬌。",
+    "height_m": 0.3,
+    "weight_kg": 6.5
+  },
+  {
+    "id": "jigglypuff",
+    "name": "胖丁",
+    "types": [
+      "一般",
+      "妖精"
+    ],
+    "weaknesses": [
+      "毒",
+      "鋼"
+    ],
+    "color": "#FCE2ED",
+    "area": "meadow",
+    "skill": "唱歌",
+    "desc": "圓滾滾又愛唱歌，開心時會輕輕地跳起舞。",
+    "height_m": 0.5,
+    "weight_kg": 5.5
+  },
+  {
+    "id": "slowpoke",
+    "name": "呆呆獸",
+    "types": [
+      "水",
+      "超能力"
+    ],
+    "weaknesses": [
+      "草",
+      "電氣",
+      "蟲",
+      "幽靈",
+      "惡"
+    ],
+    "color": "#F9D6DF",
+    "area": "pond",
+    "skill": "水之波動",
+    "desc": "慢慢走、慢慢想，最喜歡坐在池邊悠閒發呆。",
+    "height_m": 1.2,
+    "weight_kg": 36.0
+  },
+  {
+    "id": "gastly",
+    "name": "鬼斯",
+    "types": [
+      "幽靈",
+      "毒"
+    ],
+    "weaknesses": [
+      "地面",
+      "超能力",
+      "幽靈",
+      "惡"
+    ],
+    "color": "#E8D9F6",
+    "area": "night",
+    "skill": "舌舔",
+    "desc": "一團會飄來飄去的紫色氣體，喜歡夜晚的捉迷藏。",
+    "height_m": 1.3,
+    "weight_kg": 0.1
+  },
+  {
+    "id": "oddish",
+    "name": "走路草",
+    "types": [
+      "草",
+      "毒"
+    ],
+    "weaknesses": [
+      "火",
+      "冰",
+      "飛行",
+      "超能力"
+    ],
+    "color": "#DFF1CF",
+    "area": "meadow",
+    "skill": "飛葉快刀",
+    "desc": "頭上長著五片綠葉，夜晚會伸出兩隻小腳散步。",
+    "height_m": 0.5,
+    "weight_kg": 5.4
+  },
+  {
+    "id": "gengar",
+    "name": "耿鬼",
+    "types": [
+      "幽靈",
+      "毒"
+    ],
+    "weaknesses": [
+      "地面",
+      "超能力",
+      "幽靈",
+      "惡"
+    ],
+    "color": "#DFD3F6",
+    "area": "night",
+    "skill": "暗影球",
+    "desc": "尖尖耳朵和大大的笑臉，喜歡和鬼斯玩影子捉迷藏。",
+    "height_m": 1.5,
+    "weight_kg": 40.5
+  },
+  {
+    "id": "exeggutor",
+    "name": "椰蛋樹",
+    "types": [
+      "草",
+      "超能力"
+    ],
+    "weaknesses": [
+      "火",
+      "冰",
+      "毒",
+      "飛行",
+      "蟲",
+      "幽靈",
+      "惡"
+    ],
+    "color": "#E7F1C9",
+    "area": "meadow",
+    "skill": "種子炸彈",
+    "desc": "有好多顆笑臉的熱帶寶可夢。",
+    "height_m": 2.0,
+    "weight_kg": 120.0
+  },
+  {
+    "id": "grookey",
+    "name": "敲音猴",
+    "types": [
+      "草"
+    ],
+    "weaknesses": [
+      "火",
+      "冰",
+      "毒",
+      "飛行",
+      "蟲"
+    ],
+    "color": "#D9F6BE",
+    "area": "meadow",
+    "skill": "木枝敲打",
+    "desc": "活潑的小猴子，喜歡用木枝打節奏。",
+    "height_m": 0.3,
+    "weight_kg": 5.0
+  }
+]
