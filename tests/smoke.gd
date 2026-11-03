@@ -6,7 +6,7 @@ func _initialize() -> void:
         push_error("Main scene could not load")
         quit(1)
         return
-    var instance := scene.instantiate()
+    var instance = scene.instantiate()
     if instance == null:
         push_error("Main scene could not instantiate")
         quit(1)
