@@ -19,7 +19,7 @@ jobs:
     env:
       GODOT_VERSION: '4.5.2'
       GODOT_CHANNEL: 'stable'
-      GODOT_BIN: ${{ runner.temp }}/godot
+      GODOT_BIN: /tmp/godot
       APK_PATH: build/AnimalAdventureIsland.apk
     steps:
       - name: Checkout Farm
