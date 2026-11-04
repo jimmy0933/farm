@@ -23,7 +23,7 @@ func _run() -> void:
     var rng=RandomNumberGenerator.new()
     rng.seed=42
     var pikachu={"id":25,"types":["電"]}
-    var blastoise={"id":9,"types":["水"]}
+    var blastoise={"id":133,"types":["一般"]}
     for i in range(50):
         var normal=Rules.strike(pikachu,blastoise,0,rng)
         var heavy=Rules.strike(pikachu,blastoise,1,rng)
