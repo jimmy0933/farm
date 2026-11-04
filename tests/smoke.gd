@@ -16,11 +16,11 @@ func _run_smoke() -> void:
         return
     get_root().add_child(instance)
     await process_frame
-    if instance.pokemon.size() != 12:
-        push_error("Expected twelve Pokémon on the main screen")
+    if instance.pokemon.size() != 15:
+        push_error("Expected fifteen Pokémon on the main screen")
         quit(1)
         return
-    for new_id in [9, 54, 190]:
+    for new_id in [9, 54, 190, 473, 167, 1]:
         var found := false
         for index in range(instance.pokemon.size()):
             if int(instance.pokemon[index]["id"]) == new_id:
@@ -49,5 +49,5 @@ func _run_smoke() -> void:
     instance._care_play("一起玩耍")
     instance._change_mode(3)
     await process_frame
-    print("PASS: Twelve Pokémon, all six screens, voice controls and interactions")
+    print("PASS: Fifteen Pokémon, all six screens, voice controls and interactions")
     quit(0)
