@@ -126,6 +126,10 @@ func _run() -> void:
         if battle.player_strong_rest!=1 or not battle.move_buttons[1].disabled:
             _fail("Strong attack must rest for one turn")
             return
+        # Normal-type Quick Attack cannot hit Ghost-type Gengar.
+        # Switch to Eevee to test an ordinary finishing blow.
+        battle._new_opponent()
+        battle._choose(2)
         battle.opponent_hp=1
         var wins_before=int(main.battle_wins.get(str(main.pokemon[0]["id"]),0))
         battle.play_move(0)
