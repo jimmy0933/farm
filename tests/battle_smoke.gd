@@ -87,7 +87,7 @@ func _run() -> void:
         if battle==null or battle.roster.size()!=12:
             _fail("Battle mode must offer all existing Pokemon")
             return
-        var picker=battle.get_node_or_null("VBoxContainer/BattleSelectionScroll")
+        var picker=_named(battle,"BattleSelectionScroll")
         if picker==null:
             _fail("Player selection requires a scrollable, tappable portrait grid")
             return
