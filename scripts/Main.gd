@@ -227,16 +227,22 @@ func _compose() -> void:
     outer.add_theme_constant_override("margin_bottom", 10)
     add_child(outer)
 
-    var frame := VBoxContainer.new()
-    frame.add_theme_constant_override("separation", 7)
+    # Use anchored bands instead of a VBox, whose children's large minimum
+    # sizes formerly pushed the speech footer offscreen.
+    var frame:=Control.new()
+    frame.name="FixedFrame"
     frame.size_flags_horizontal=Control.SIZE_EXPAND_FILL
     frame.size_flags_vertical=Control.SIZE_EXPAND_FILL
     outer.add_child(frame)
+    frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
     var top := HBoxContainer.new()
     top.custom_minimum_size = Vector2(0, 43)
     top.add_theme_constant_override("separation", 10)
     frame.add_child(top)
+    top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+    top.offset_top=0
+    top.offset_bottom=44
     top.add_child(_label("🌈 寶可夢小小探險隊", 29))
     voice_note = _label("4歲也能自己玩", 18, MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
     voice_note.custom_minimum_size = Vector2(210, 42)
@@ -245,6 +251,9 @@ func _compose() -> void:
     var nav := HBoxContainer.new()
     nav.add_theme_constant_override("separation", 7)
     frame.add_child(nav)
+    nav.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+    nav.offset_top=49
+    nav.offset_bottom=108
     for i in range(MODES.size()):
         var color := GOLD if i == mode else WHITE
         var button := _pretty_button(MODE_ICONS[i] + "  " + MODES[i], color, Vector2(132, 55))
@@ -261,6 +270,9 @@ func _compose() -> void:
     content_scroller.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_AUTO
     content_scroller.clip_contents=true
     frame.add_child(content_scroller)
+    content_scroller.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    content_scroller.offset_top=114
+    content_scroller.offset_bottom=-78
     content_host = VBoxContainer.new()
     content_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     content_host.add_theme_constant_override("separation", 8)
@@ -278,6 +290,9 @@ func _compose() -> void:
     caption_panel.size_flags_vertical=Control.SIZE_SHRINK_END
     caption_panel.name="VoiceFooter"
     frame.add_child(caption_panel)
+    caption_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+    caption_panel.offset_top=-70
+    caption_panel.offset_bottom=0
     var speech_row := HBoxContainer.new()
     speech_row.add_theme_constant_override("separation", 8)
     caption_panel.add_child(speech_row)
