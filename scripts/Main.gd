@@ -24,7 +24,8 @@ const EN_BUTTONS={
     "縮入殼中":"Withdraw", "幻象光線":"Psybeam",
     "念力":"Confusion", "火花":"Ember", "抓":"Scratch",
     "水炮":"Hydro Pump", "高速星星":"Swift",
-    "撞擊":"Tackle"
+    "撞擊":"Tackle", "冰礫":"Ice Shard", "地震":"Earthquake",
+    "毒針":"Poison Sting", "蟲咬":"Bug Bite", "藤鞭":"Vine Whip"
 }
 const DARK = Color("#263C55")
 const MUTED = Color("#587084")
@@ -420,6 +421,7 @@ func _creature_card(index: int, press_action: Callable, card_size: Vector2 = Vec
 
 
 func _show_friends() -> void:
+    # Both panes retain fixed-height independent scrolling as the roster grows.
     # The two panels get their own FIXED-height viewports. Previously the
     # right-hand detail's long content expanded the whole HBox, making the
     # roster scroll as tall as all 12 cards. The only draggable surface was
