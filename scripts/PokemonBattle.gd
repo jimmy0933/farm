@@ -6,6 +6,8 @@ signal leave_requested
 signal win_recorded(index: int)
 
 const Rules=preload("res://scripts/PokemonBattleRules.gd")
+const Scenery=preload("res://scripts/PokemonBattleScenery.gd")
+const Arena=preload("res://scripts/PokemonBattleArena.gd")
 const INK=Color("#29445B")
 const LIGHT=Color("#FFFFFF")
 const SOFT=Color("#EFF8FC")
@@ -25,6 +27,9 @@ var last_damage: int=0
 var last_effect: String=""
 var player_portrait: Control
 var opponent_portrait: Control
+var arena_node: Control
+var battle_biome: String="meadow"
+var scene_variant: int=0
 var move_buttons: Array=[]
 var rng:=RandomNumberGenerator.new()
 
@@ -59,6 +64,11 @@ func _button(zh: String, en: String, tint: Color=Color("#E2F5E9")) -> Button:
     var base=StyleBoxFlat.new()
     base.bg_color=tint
     base.set_corner_radius_all(16)
+    base.border_color=Color("#FFFFFF",.92)
+    base.set_border_width_all(2)
+    base.shadow_color=Color("#304F64",.19)
+    base.shadow_size=5
+    base.shadow_offset=Vector2(1,3)
     base.content_margin_left=9
     base.content_margin_right=9
     base.content_margin_top=7
@@ -210,6 +220,8 @@ func _start() -> void:
     last_damage=0
     last_effect=""
     last_message="✨ 準備好了嗎？按招式開始對決！"
+    battle_biome=Scenery.choose_biome(roster[opponent_index].get("types",[]))
+    scene_variant=rng.randi_range(0,2)
     _render()
     say_requested.emit("%s，準備好了嗎？要跟%s對決囉！按招式攻擊！" %
         [str(roster[player_index]["name"]),str(roster[opponent_index]["name"])])
@@ -239,38 +251,66 @@ func _health_bar(value: int, is_player: bool) -> VBoxContainer:
     root.add_child(_text("❤️ %d / 100" % value,17,true))
     return root
 
+func _hud_panel(content: Control) -> PanelContainer:
+    var box=PanelContainer.new()
+    box.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    var skin=StyleBoxFlat.new()
+    skin.bg_color=Color("#EDF8F9",.97)
+    skin.border_color=Color("#FFFFFF")
+    skin.set_border_width_all(2)
+    skin.set_corner_radius_all(15)
+    skin.content_margin_left=12
+    skin.content_margin_right=12
+    skin.content_margin_top=6
+    skin.content_margin_bottom=6
+    skin.shadow_size=4
+    skin.shadow_color=Color("#526575",.12)
+    box.add_theme_stylebox_override("panel",skin)
+    box.add_child(content)
+    return box
+
 func _battle() -> void:
     var root=_clear()
+    root.name="BattleRoot"
+    var compact=get_viewport_rect().size.y<680.0
+    root.add_theme_constant_override("separation",5 if compact else 7)
     var headline=HBoxContainer.new()
+    headline.name="BattleHealthHUD"
     headline.add_theme_constant_override("separation",10)
     root.add_child(headline)
-    headline.add_child(_health_bar(player_hp,true))
-    headline.add_child(_text("⚔️",26,true))
-    headline.add_child(_health_bar(opponent_hp,false))
+    headline.add_child(_hud_panel(_health_bar(player_hp,true)))
+    var swords=_text("⚔️",24,true)
+    swords.custom_minimum_size.x=48
+    swords.size_flags_horizontal=Control.SIZE_SHRINK_CENTER
+    headline.add_child(swords)
+    headline.add_child(_hud_panel(_health_bar(opponent_hp,false)))
+    var scene= Arena.new()
+    scene.name="BattleArena"
+    scene.custom_minimum_size.y=168 if compact else 238
+    scene.configure(roster[player_index],roster[opponent_index],battle_biome,scene_variant)
+    root.add_child(scene)
+    arena_node=scene
+    player_portrait=scene.player_portrait
+    opponent_portrait=scene.opponent_portrait
 
-    var stage=HBoxContainer.new()
-    stage.name="BattleArena"
-    stage.custom_minimum_size.y=175
-    stage.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-    stage.alignment=BoxContainer.ALIGNMENT_CENTER
-    stage.add_theme_constant_override("separation",25)
-    root.add_child(stage)
-    var player_panel=VBoxContainer.new()
-    player_panel.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-    stage.add_child(player_panel)
-    player_portrait=_portrait(player_index,Vector2(180,155))
-    player_panel.add_child(player_portrait)
-    var enemy_panel=VBoxContainer.new()
-    enemy_panel.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-    stage.add_child(enemy_panel)
-    opponent_portrait=_portrait(opponent_index,Vector2(180,155))
-    enemy_panel.add_child(opponent_portrait)
-
-    var status=_text(last_message,20,true)
+    var message_box=PanelContainer.new()
+    message_box.name="BattleMessageCard"
+    var message_skin=StyleBoxFlat.new()
+    message_skin.bg_color=Color("#F3F9FC")
+    message_skin.border_color=Color("#CCDFEA")
+    message_skin.set_border_width_all(2)
+    message_skin.set_corner_radius_all(16)
+    message_skin.content_margin_left=11
+    message_skin.content_margin_right=11
+    message_skin.content_margin_top=4
+    message_skin.content_margin_bottom=4
+    message_box.add_theme_stylebox_override("panel",message_skin)
+    root.add_child(message_box)
+    var status=_text(last_message,19 if compact else 20,true)
     status.name="BattleStatus"
-    status.custom_minimum_size.y=43
+    status.custom_minimum_size.y=31 if compact else 37
     status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-    root.add_child(status)
+    message_box.add_child(status)
     move_buttons.clear()
     if not finished:
         var attacks=HBoxContainer.new()
@@ -287,14 +327,14 @@ func _battle() -> void:
                 en+=" ✨"
             var btn=_button(label,en,Color("#DDF2E8") if i==0 else Color("#FFEDBF"))
             btn.name="Attack_%d" % i
-            btn.custom_minimum_size.y=64
+            btn.custom_minimum_size.y=54 if compact else 62
             btn.disabled=busy or (i==1 and player_strong_rest>0)
             btn.tooltip_text="每回合可用" if i==0 else "強力招式使用後需休息一回合"
             btn.pressed.connect(play_move.bind(i))
             attacks.add_child(btn)
             move_buttons.append(btn)
         if player_strong_rest>0:
-            root.add_child(_text("⏳ 強力招式休息中，再用一次普通招式就可以了",16,true))
+            root.add_child(_text("⏳ 強力招式休息中",15,true))
     else:
         var actions=HBoxContainer.new()
         actions.name="BattleResultActions"
@@ -307,7 +347,7 @@ func _battle() -> void:
         change.pressed.connect(_new_opponent)
         actions.add_child(change)
     var leave=_button("🏠 回圖鑑","🏠 Back",Color("#E9EDF6"))
-    leave.custom_minimum_size.y=43
+    leave.custom_minimum_size.y=40 if compact else 43
     leave.pressed.connect(func(): leave_requested.emit())
     root.add_child(leave)
 
@@ -332,10 +372,13 @@ func play_move(slot: int) -> void:
     last_message="%s %s！💥 -%d HP%s" % [
         Rules.icon(str(result["type"])),str(result["name"]),last_damage,hint]
     _battle()
-    _flash(opponent_portrait,str(result["type"]))
     if opponent_hp==0:
         _finish(true)
+        if is_instance_valid(arena_node):
+            arena_node.play_impact(true,str(result["type"]),last_damage,float(result["effectiveness"]))
         return
+    if is_instance_valid(arena_node):
+        arena_node.play_impact(true,str(result["type"]),last_damage,float(result["effectiveness"]))
     say_requested.emit("%s使出了%s！%s受到%d點傷害。%s" %
         [str(attacker["name"]),str(result["name"]),str(defender["name"]),last_damage,_narrated_hint(result)])
     await get_tree().create_timer(0.9).timeout
@@ -354,10 +397,13 @@ func _cpu_turn() -> void:
         Rules.icon(str(result["type"])),str(result["name"]),last_damage,_result_hint(result)]
     if player_hp==0:
         _finish(false)
+        if is_instance_valid(arena_node):
+            arena_node.play_impact(false,str(result["type"]),last_damage,float(result["effectiveness"]))
         return
     busy=false
     _battle()
-    _flash(player_portrait,str(result["type"]))
+    if is_instance_valid(arena_node):
+        arena_node.play_impact(false,str(result["type"]),last_damage,float(result["effectiveness"]))
     say_requested.emit("換%s囉！牠使出了%s！你受到%d點傷害。輪到你了！" %
         [str(roster[opponent_index]["name"]),str(result["name"]),last_damage])
 
