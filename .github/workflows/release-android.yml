@@ -137,6 +137,16 @@ jobs:
             exit 1
           fi
 
+      - name: Test new Pokemon official artwork, speech, Pokedex and battles
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --script res://tests/new_pokemon_smoke.gd 2>&1 | tee /tmp/new-pokemon-smoke.log
+          if ! grep -q '^PASS: Mamoswine Spinarak Bulbasaur' /tmp/new-pokemon-smoke.log || grep -Eq 'SCRIPT ERROR:|ERROR:' /tmp/new-pokemon-smoke.log; then
+            echo '::error::New Pokemon image, narration, roster or battle regression'
+            exit 1
+          fi
+
       - name: Build signed APK and verify Android signature
         shell: bash
         run: |
