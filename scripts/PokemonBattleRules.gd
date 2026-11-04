@@ -52,7 +52,10 @@ const MOVES = {
     4:[["抓","一般"],["火花","火"]],
     9:[["水槍","水"],["水炮","水"]],
     54:[["水槍","水"],["念力","超能力"]],
-    190:[["抓","一般"],["暗影爪","幽靈"]]
+    190:[["抓","一般"],["暗影爪","幽靈"]],
+    473:[["冰礫","冰"],["地震","地面"]],
+    167:[["毒針","毒"],["蟲咬","蟲"]],
+    1:[["藤鞭","草"],["飛葉快刀","草"]]
 }
 const EN_MOVES = {
     "電光一閃":"Quick Attack", "十萬伏特":"Thunderbolt",
@@ -62,6 +65,8 @@ const EN_MOVES = {
     "抓":"Scratch", "火花":"Ember", "水炮":"Hydro Pump",
     "高速星星":"Swift", "電擊":"Thunder Shock",
     "毒液衝擊":"Venoshock", "咬住":"Bite", "暗影爪":"Shadow Claw", "影子球":"Shadow Ball",
+    "冰礫":"Ice Shard", "地震":"Earthquake", "毒針":"Poison Sting",
+    "蟲咬":"Bug Bite", "藤鞭":"Vine Whip",
     "催眠術":"Hypnosis", "縮入殼中":"Withdraw"
 }
 
