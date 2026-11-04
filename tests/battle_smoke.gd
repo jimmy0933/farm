@@ -11,8 +11,8 @@ func _run() -> void:
     var existing=FileAccess.file_exists("user://pokemon_kids_progress.json")
     if existing:
         saved_bytes=FileAccess.get_file_as_bytes("user://pokemon_kids_progress.json")
-    if Rules.MOVES.size()!=12 or Rules.MAX_HP!=100:
-        _fail("All twelve Pokemon need two attack choices and 100 HP")
+    if Rules.MOVES.size()!=15 or Rules.MAX_HP!=100:
+        _fail("All fifteen Pokemon need two attack choices and 100 HP")
         return
     if Rules.effectiveness("電",["水"])!=2.0 or Rules.effectiveness("電",["地面"])!=0.0:
         _fail("Weaknesses and immunities need correct type chart values")
@@ -47,7 +47,7 @@ func _run() -> void:
         var backup_wins=main.battle_wins.duplicate(true)
         var backup_discovered=main.discovered.duplicate(true)
         var old_language=main.button_language
-        if main.pokemon.size()!=12 or main.MODES.size()!=6:
+        if main.pokemon.size()!=15 or main.MODES.size()!=6:
             _fail("All twelve Pokemon and six modes must be present")
             return
         # Every pairing must have an attack that can deal damage.
@@ -103,7 +103,7 @@ func _run() -> void:
         main._change_mode(4)
         await process_frame
         var battle=main.battle_view
-        if battle==null or battle.roster.size()!=12:
+        if battle==null or battle.roster.size()!=15:
             _fail("Battle mode must offer all existing Pokemon")
             return
         var picker=_named(battle,"BattleSelectionScroll")
@@ -188,7 +188,7 @@ func _run() -> void:
         restore.close()
     else:
         DirAccess.remove_absolute(ProjectSettings.globalize_path("user://pokemon_kids_progress.json"))
-    print("PASS: 12 Pokemon battles, damage types, two move buttons, automatic counters, 100 HP knockout, voice, English settings and unclipped bottom")
+    print("PASS: 15 Pokemon battles, damage types, two move buttons, automatic counters, 100 HP knockout, voice, English settings and unclipped bottom")
     quit(0)
 
 func _named(node: Node, wanted: String) -> Node:
