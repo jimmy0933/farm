@@ -42,8 +42,8 @@ const CHART = {
 # rest one turn before it can be used again. These names are game approximations.
 const MOVES = {
     25:[["電光一閃","一般"],["十萬伏特","電"]],
-    94:[["舌舔","幽靈"],["暗影球","幽靈"]],
-    133:[["撞擊","一般"],["電光一閃","一般"]],
+    94:[["毒液衝擊","毒"],["暗影球","幽靈"]],
+    133:[["撞擊","一般"],["咬住","惡"]],
     103:[["念力","超能力"],["種子炸彈","草"]],
     810:[["木枝突刺","草"],["飛葉快刀","草"]],
     7:[["撞擊","一般"],["水槍","水"]],
@@ -52,7 +52,7 @@ const MOVES = {
     4:[["抓","一般"],["火花","火"]],
     9:[["水槍","水"],["水炮","水"]],
     54:[["水槍","水"],["念力","超能力"]],
-    190:[["抓","一般"],["高速星星","一般"]]
+    190:[["抓","一般"],["暗影爪","幽靈"]]
 }
 const EN_MOVES = {
     "電光一閃":"Quick Attack", "十萬伏特":"Thunderbolt",
@@ -60,7 +60,8 @@ const EN_MOVES = {
     "念力":"Confusion", "種子炸彈":"Seed Bomb", "木枝突刺":"Branch Poke",
     "飛葉快刀":"Razor Leaf", "水槍":"Water Gun", "幻象光線":"Psybeam",
     "抓":"Scratch", "火花":"Ember", "水炮":"Hydro Pump",
-    "高速星星":"Swift", "電擊":"Thunder Shock", "影子球":"Shadow Ball",
+    "高速星星":"Swift", "電擊":"Thunder Shock",
+    "毒液衝擊":"Venoshock", "咬住":"Bite", "暗影爪":"Shadow Claw", "影子球":"Shadow Ball",
     "催眠術":"Hypnosis", "縮入殼中":"Withdraw"
 }
 
