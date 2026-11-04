@@ -39,7 +39,7 @@ func _run_smoke() -> void:
     instance._say_types()
     instance._say_measurements()
     instance._say_abilities()
-    for tab in range(4):
+    for tab in range(6):
         instance._change_mode(tab)
         await process_frame
     instance._next_question()
@@ -49,5 +49,5 @@ func _run_smoke() -> void:
     instance._care_play("一起玩耍")
     instance._change_mode(3)
     await process_frame
-    print("PASS: Twelve Pokémon, all four screens, voice controls and interactions")
+    print("PASS: Twelve Pokémon, all six screens, voice controls and interactions")
     quit(0)
