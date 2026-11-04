@@ -147,11 +147,35 @@ jobs:
         run: |
           set -euo pipefail
           tag="pokemon-kids-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
-          gh release create "$tag" "$APK_PATH#PokemonKids.apk" \
-            --target "$GITHUB_SHA" \
-            --title "寶可夢小小探險隊 - 最新版 ${GITHUB_RUN_NUMBER}" \
-            --notes '4歲語音互動寶可夢遊戲：十二隻朋友、圖示化圖鑑、五種野外場景寶可夢回合對決與血條、電腦還擊、中文語音、英文按鈕設定、尋找猜猜樂、照顧遊戲與愛心貼紙。非官方私人作品。' \
-            --latest
+          # A transient GitHub API HTTP 500 must not invalidate a fully signed APK.
+          # Release creation is idempotent across retries and old releases stay
+          # untouched until the new signed APK is confirmed published.
+          published=false
+          for attempt in 1 2 3 4 5; do
+            if gh release view "$tag" >/dev/null 2>&1; then
+              if gh release view "$tag" --json assets --jq '.assets[].name' | grep -Fxq 'PokemonKids.apk'; then
+                published=true
+                break
+              fi
+              if gh release upload "$tag" "$APK_PATH#PokemonKids.apk" --clobber; then
+                published=true
+                break
+              fi
+            elif gh release create "$tag" "$APK_PATH#PokemonKids.apk" \
+              --target "$GITHUB_SHA" \
+              --title "寶可夢小小探險隊 - 最新版 ${GITHUB_RUN_NUMBER}" \
+              --notes '4歲語音互動寶可夢遊戲：十二隻朋友、圖示化圖鑑、五種野外場景寶可夢回合對決與血條、電腦還擊、中文語音、英文按鈕設定、尋找猜猜樂、照顧遊戲與愛心貼紙。非官方私人作品。' \
+              --latest; then
+              published=true
+              break
+            fi
+            echo "Release API attempt ${attempt} failed; retrying after backoff..."
+            sleep "$((attempt*5))"
+          done
+          if [[ "$published" != "true" ]]; then
+            echo '::error::Could not publish the verified signed APK after 5 attempts'
+            exit 1
+          fi
           while IFS= read -r old_tag; do
             if [[ -n "$old_tag" && "$old_tag" != "$tag" ]]; then
               gh release delete "$old_tag" --yes --cleanup-tag
