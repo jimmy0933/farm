@@ -50,6 +50,19 @@ func _run() -> void:
         if main.pokemon.size()!=12 or main.MODES.size()!=6:
             _fail("All twelve Pokemon and six modes must be present")
             return
+        # Every pairing must have an attack that can deal damage.
+        # In particular, Ghost-type immunity used to trap Eevee/Aipom matches.
+        for attacker in main.pokemon:
+            for defender in main.pokemon:
+                if attacker["id"]==defender["id"]:
+                    continue
+                var viable=false
+                for move in Rules.moves_for(int(attacker["id"])):
+                    if Rules.effectiveness(str(move[1]),defender["types"])>0.0:
+                        viable=true
+                if not viable:
+                    _fail("Unwinnable matchup: "+str(attacker["name"])+" vs "+str(defender["name"]))
+                    return
         # The speech footer stays on screen even for tall Pokedex details.
         var footer=_named(main,"VoiceFooter")
         var content=main.content_scroller
