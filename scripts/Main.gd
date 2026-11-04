@@ -6,6 +6,7 @@ const MODES = ["圖鑑", "玩遊戲", "照顧朋友", "貼紙館", "寶可夢對
 const MODE_ICONS = ["📖", "🎯", "💗", "🌟", "⚔️", "⚙️"]
 const PokemonBattle=preload("res://scripts/PokemonBattle.gd")
 const BattleRules=preload("res://scripts/PokemonBattleRules.gd")
+const KidsTouchScroll=preload("res://scripts/KidsTouchScroll.gd")
 const EN_BUTTONS={
     "圖鑑":"Pokédex", "玩遊戲":"Guess", "照顧朋友":"Care",
     "貼紙館":"Stickers", "寶可夢對決":"Battle", "設定":"Settings",
@@ -44,6 +45,9 @@ var battle_wins: Dictionary = {}
 var button_language: String = "zh"
 var battle_view: Control
 var content_scroller: ScrollContainer
+var pokemon_roster_scroll: ScrollContainer
+var pokemon_detail_scroll: ScrollContainer
+var roster_scroll_position: int=0
 var last_speech: String = ""
 var voice_id: String = ""
 var rng := RandomNumberGenerator.new()
@@ -267,7 +271,7 @@ func _compose() -> void:
     content_scroller.size_flags_vertical=Control.SIZE_EXPAND_FILL
     content_scroller.size_flags_horizontal=Control.SIZE_EXPAND_FILL
     content_scroller.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
-    content_scroller.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_AUTO
+    content_scroller.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED if mode==0 else ScrollContainer.SCROLL_MODE_AUTO
     content_scroller.clip_contents=true
     frame.add_child(content_scroller)
     content_scroller.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -416,38 +420,85 @@ func _creature_card(index: int, press_action: Callable, card_size: Vector2 = Vec
 
 
 func _show_friends() -> void:
-    var layout := HBoxContainer.new()
-    layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    layout.add_theme_constant_override("separation", 14)
-    content_host.add_child(layout)
+    # The two panels get their own FIXED-height viewports. Previously the
+    # right-hand detail's long content expanded the whole HBox, making the
+    # roster scroll as tall as all 12 cards. The only draggable surface was
+    # then the *outer* page, which made both columns feel stuck on phones.
+    var columns=Control.new()
+    columns.name="PokedexColumns"
+    columns.custom_minimum_size.y=maxf(286.0,get_viewport_rect().size.y-248.0)
+    columns.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    content_host.add_child(columns)
 
-    var left := _styled_panel(WHITE)
-    left.custom_minimum_size = Vector2(510, 0)
-    left.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    layout.add_child(left)
-    var left_col := VBoxContainer.new()
-    left_col.add_theme_constant_override("separation", 6)
+    var left=_styled_panel(WHITE)
+    left.name="PokemonRosterPanel"
+    columns.add_child(left)
+    left.anchor_left=0.0
+    left.anchor_right=.43
+    left.anchor_top=0.0
+    left.anchor_bottom=1.0
+    left.offset_right=-7.0
+    var left_col=VBoxContainer.new()
+    left_col.add_theme_constant_override("separation",5)
     left.add_child(left_col)
-    left_col.add_child(_label("✨ 點一位朋友來認識！", 22))
-    # Twelve friends need a scrollable grid so all four rows stay comfortably tappable.
-    left_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    var friend_scroll := ScrollContainer.new()
-    friend_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    friend_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    friend_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-    left_col.add_child(friend_scroll)
-    var grid := GridContainer.new()
-    grid.columns = 3
-    grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    grid.add_theme_constant_override("h_separation", 7)
-    grid.add_theme_constant_override("v_separation", 7)
-    friend_scroll.add_child(grid)
+    left_col.add_child(_label("👆 選角色   ↕️ 上下滑",19))
+    var list_row=HBoxContainer.new()
+    list_row.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    list_row.size_flags_vertical=Control.SIZE_EXPAND_FILL
+    list_row.add_theme_constant_override("separation",3)
+    left_col.add_child(list_row)
+    var roster_scroll=KidsTouchScroll.new()
+    roster_scroll.name="PokemonRosterScroll"
+    roster_scroll.swipe_speed=2.0
+    roster_scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    roster_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+    list_row.add_child(roster_scroll)
+    pokemon_roster_scroll=roster_scroll
+    var grid=GridContainer.new()
+    grid.name="PokemonRosterGrid"
+    grid.columns=3
+    grid.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    grid.add_theme_constant_override("h_separation",7)
+    grid.add_theme_constant_override("v_separation",7)
+    roster_scroll.add_child(grid)
     for i in range(pokemon.size()):
-        grid.add_child(_creature_card(i, _select_friend.bind(i), Vector2(146, 129)))
-    _detail_panel(layout)
+        grid.add_child(_creature_card(i,_select_friend.bind(i),Vector2(124,143)))
+    _scroll_page_buttons(list_row,roster_scroll,"Roster")
+
+    _detail_panel(columns)
+    call_deferred("_restore_roster_scroll")
+
+
+func _scroll_page_buttons(parent: Control,scroller: ScrollContainer,prefix: String) -> void:
+    # A predictable alternative to swiping for very young children.
+    var col=VBoxContainer.new()
+    col.name=prefix+"PageControls"
+    col.custom_minimum_size.x=51
+    col.alignment=BoxContainer.ALIGNMENT_CENTER
+    col.add_theme_constant_override("separation",10)
+    parent.add_child(col)
+    var up=_pretty_button("▲",Color("#E7F2FE"),Vector2(48,76))
+    up.name=prefix+"PageUp"
+    up.tooltip_text="上一頁"
+    up.pressed.connect(scroller.page.bind(-1))
+    col.add_child(up)
+    var down=_pretty_button("▼",Color("#E7F2FE"),Vector2(48,76))
+    down.name=prefix+"PageDown"
+    down.tooltip_text="下一頁"
+    down.pressed.connect(scroller.page.bind(1))
+    col.add_child(down)
+
+
+func _restore_roster_scroll() -> void:
+    if is_instance_valid(pokemon_roster_scroll):
+        pokemon_roster_scroll.restore(roster_scroll_position)
 
 
 func _select_friend(index: int) -> void:
+    if is_instance_valid(pokemon_roster_scroll) and pokemon_roster_scroll.was_dragging:
+        return
+    if is_instance_valid(pokemon_roster_scroll):
+        roster_scroll_position=pokemon_roster_scroll.scroll_vertical
     selected = index
     _add_heart(index)
     _compose()
@@ -482,12 +533,28 @@ func _symbol_strip(parent: VBoxContainer, prefix: String, types: Array) -> void:
 func _detail_panel(parent: Control) -> void:
     var m: Dictionary = pokemon[selected]
     var detail := _styled_panel(Color(str(m["color"])).lightened(0.58), 27)
-    detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    detail.name="PokemonDetailPanel"
     parent.add_child(detail)
+    detail.anchor_left=.43
+    detail.anchor_right=1.0
+    detail.anchor_top=0.0
+    detail.anchor_bottom=1.0
+    detail.offset_left=7.0
+    var detail_row=HBoxContainer.new()
+    detail_row.add_theme_constant_override("separation",4)
+    detail.add_child(detail_row)
+    var detail_scroll=KidsTouchScroll.new()
+    detail_scroll.name="PokemonDetailScroll"
+    detail_scroll.swipe_speed=1.9
+    detail_scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    detail_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+    detail_row.add_child(detail_scroll)
+    pokemon_detail_scroll=detail_scroll
     var col := VBoxContainer.new()
+    col.size_flags_horizontal=Control.SIZE_EXPAND_FILL
     col.add_theme_constant_override("separation", 8)
-    detail.add_child(col)
+    detail_scroll.add_child(col)
+    _scroll_page_buttons(detail_row,detail_scroll,"Detail")
     var hero := HBoxContainer.new()
     hero.add_theme_constant_override("separation", 12)
     hero.custom_minimum_size = Vector2(0, 188)
