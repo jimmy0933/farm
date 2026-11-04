@@ -2,8 +2,29 @@ extends Control
 ## Voice-first interactive Pokemon learning game, built for ages 4+.
 ## All descriptions are original, child-friendly summaries of public Pokédex data.
 
-const MODES = ["圖鑑", "玩遊戲", "照顧朋友", "貼紙館"]
-const MODE_ICONS = ["📖", "🎯", "💗", "🌟"]
+const MODES = ["圖鑑", "玩遊戲", "照顧朋友", "貼紙館", "寶可夢對決", "設定"]
+const MODE_ICONS = ["📖", "🎯", "💗", "🌟", "⚔️", "⚙️"]
+const PokemonBattle=preload("res://scripts/PokemonBattle.gd")
+const BattleRules=preload("res://scripts/PokemonBattleRules.gd")
+const EN_BUTTONS={
+    "圖鑑":"Pokédex", "玩遊戲":"Guess", "照顧朋友":"Care",
+    "貼紙館":"Stickers", "寶可夢對決":"Battle", "設定":"Settings",
+    "再聽一次":"Replay", "停止":"Stop", "聽我介紹":"Listen",
+    "屬性":"Types", "身高體重":"Size", "身高":"Height",
+    "體重":"Weight", "特性":"Ability", "聽好玩的秘密":"Story",
+    "換下一題":"Next", "換一個朋友":"Next Friend",
+    "給牠吃點心":"Feed", "一起玩耍":"Play", "休息一下":"Rest",
+    "輕輕打招呼":"Hello", "回圖鑑":"Back", "中文":"Chinese",
+    "變更語言":"Language", "English":"English",
+    "電擊":"Thunder Shock", "影子球":"Shadow Ball",
+    "電光一閃":"Quick Attack", "催眠術":"Hypnosis",
+    "種子炸彈":"Seed Bomb", "木枝突刺":"Branch Poke",
+    "飛葉快刀":"Razor Leaf", "水槍":"Water Gun",
+    "縮入殼中":"Withdraw", "幻象光線":"Psybeam",
+    "念力":"Confusion", "火花":"Ember", "抓":"Scratch",
+    "水炮":"Hydro Pump", "高速星星":"Swift",
+    "撞擊":"Tackle", "影子球":"Shadow Ball"
+}
 const DARK = Color("#263C55")
 const MUTED = Color("#587084")
 const PALE = Color("#F0FAFC")
@@ -19,6 +40,10 @@ var quiz_options: Array[int] = []
 var quiz_solved: bool = false
 var hearts: Dictionary = {}
 var discovered: Dictionary = {}
+var battle_wins: Dictionary = {}
+var button_language: String = "zh"
+var battle_view: Control
+var content_scroller: ScrollContainer
 var last_speech: String = ""
 var voice_id: String = ""
 var rng := RandomNumberGenerator.new()
@@ -92,12 +117,14 @@ func _read_progress() -> void:
     if typeof(save) == TYPE_DICTIONARY:
         hearts = save.get("hearts", {})
         discovered = save.get("discovered", {})
+        battle_wins = save.get("battle_wins", {})
+        button_language = "en" if str(save.get("button_language", "zh")) == "en" else "zh"
 
 
 func _save_progress() -> void:
     var save_file := FileAccess.open("user://pokemon_kids_progress.json", FileAccess.WRITE)
     if save_file != null:
-        save_file.store_string(JSON.stringify({"hearts": hearts, "discovered": discovered}))
+        save_file.store_string(JSON.stringify({"hearts": hearts, "discovered": discovered, "battle_wins":battle_wins, "button_language":button_language}))
 
 
 func _add_heart(index: int, amount: int = 1) -> void:
@@ -126,12 +153,21 @@ func _styled_panel(color: Color, rounded: int = 26) -> PanelContainer:
     return panel
 
 
+func _translated_button(raw: String) -> String:
+    if button_language!="en":
+        return raw
+    var result=raw
+    for chinese in EN_BUTTONS:
+        if result.contains(str(chinese)):
+            result=result.replace(str(chinese),str(EN_BUTTONS[chinese]))
+    return result
+
 func _pretty_button(text: String, bg: Color, min_size: Vector2 = Vector2(175, 66)) -> Button:
     var button := Button.new()
-    button.text = text
+    button.text = _translated_button(text)
     button.custom_minimum_size = min_size
     button.focus_mode = Control.FOCUS_NONE
-    button.add_theme_font_size_override("font_size", 24)
+    button.add_theme_font_size_override("font_size", 21 if button_language=="en" else 23)
     button.add_theme_color_override("font_color", DARK)
     button.add_theme_color_override("font_hover_color", DARK)
     button.add_theme_color_override("font_pressed_color", DARK)
@@ -175,6 +211,7 @@ func _gap(parent: Node, value: int = 10) -> void:
 
 func _compose() -> void:
     for child in get_children():
+        remove_child(child)
         child.queue_free()
     var bg := ColorRect.new()
     bg.color = PALE
@@ -187,56 +224,73 @@ func _compose() -> void:
     outer.add_theme_constant_override("margin_left", 20)
     outer.add_theme_constant_override("margin_right", 20)
     outer.add_theme_constant_override("margin_top", 12)
-    outer.add_theme_constant_override("margin_bottom", 12)
+    outer.add_theme_constant_override("margin_bottom", 10)
     add_child(outer)
 
     var frame := VBoxContainer.new()
-    frame.add_theme_constant_override("separation", 10)
+    frame.add_theme_constant_override("separation", 7)
+    frame.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    frame.size_flags_vertical=Control.SIZE_EXPAND_FILL
     outer.add_child(frame)
 
     var top := HBoxContainer.new()
-    top.custom_minimum_size = Vector2(0, 48)
+    top.custom_minimum_size = Vector2(0, 43)
     top.add_theme_constant_override("separation", 10)
     frame.add_child(top)
-    top.add_child(_label("🌈 寶可夢小小探險隊", 34))
+    top.add_child(_label("🌈 寶可夢小小探險隊", 29))
     voice_note = _label("4歲也能自己玩", 18, MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
     voice_note.custom_minimum_size = Vector2(210, 42)
     top.add_child(voice_note)
 
     var nav := HBoxContainer.new()
-    nav.add_theme_constant_override("separation", 12)
+    nav.add_theme_constant_override("separation", 7)
     frame.add_child(nav)
     for i in range(MODES.size()):
         var color := GOLD if i == mode else WHITE
-        var button := _pretty_button(MODE_ICONS[i] + "  " + MODES[i], color, Vector2(160, 64))
+        var button := _pretty_button(MODE_ICONS[i] + "  " + MODES[i], color, Vector2(132, 55))
         button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         button.pressed.connect(_change_mode.bind(i))
         nav.add_child(button)
 
+    # Only the middle scrolls. The nav and voice buttons never drop offscreen.
+    content_scroller=ScrollContainer.new()
+    content_scroller.name="MainContentScroll"
+    content_scroller.size_flags_vertical=Control.SIZE_EXPAND_FILL
+    content_scroller.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    content_scroller.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+    content_scroller.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_AUTO
+    content_scroller.clip_contents=true
+    frame.add_child(content_scroller)
     content_host = VBoxContainer.new()
-    content_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
     content_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     content_host.add_theme_constant_override("separation", 8)
-    frame.add_child(content_host)
+    content_scroller.add_child(content_host)
     match mode:
         0: _show_friends()
         1: _show_guess()
         2: _show_care()
         3: _show_stickers()
+        4: _show_battle()
+        5: _show_settings()
 
     var caption_panel := _styled_panel(WHITE, 22)
-    caption_panel.custom_minimum_size = Vector2(0, 70)
+    caption_panel.custom_minimum_size = Vector2(0, 68)
+    caption_panel.size_flags_vertical=Control.SIZE_SHRINK_END
+    caption_panel.name="VoiceFooter"
     frame.add_child(caption_panel)
     var speech_row := HBoxContainer.new()
     speech_row.add_theme_constant_override("separation", 8)
     caption_panel.add_child(speech_row)
     caption_label = _label("🔊 " + (last_speech if not last_speech.is_empty() else "歡迎來探險，按圖片就會說話喔！"), 20, MUTED)
     caption_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    caption_label.autowrap_mode=TextServer.AUTOWRAP_OFF
+    caption_label.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
+    caption_label.tooltip_text=last_speech
     speech_row.add_child(caption_label)
-    var replay := _pretty_button("🔊 再聽一次", Color("#D9F8ED"), Vector2(180, 52))
+    var replay := _pretty_button("🔊 再聽一次", Color("#D9F8ED"), Vector2(152, 49))
     replay.pressed.connect(_replay)
     speech_row.add_child(replay)
-    var stop := _pretty_button("⏹ 停止", Color("#FFE5E4"), Vector2(114, 52))
+    var stop := _pretty_button("⏹ 停止", Color("#FFE5E4"), Vector2(103, 49))
     stop.pressed.connect(func(): DisplayServer.tts_stop())
     speech_row.add_child(stop)
 
@@ -244,9 +298,60 @@ func _compose() -> void:
 func _change_mode(index: int) -> void:
     mode = index
     _compose()
-    var prompt := ["挑一個寶可夢朋友，點圖片就會說話！", "聽問題，找出正確的寶可夢！", "一起吃點心、玩耍、休息、打招呼！", "每次互動都可以收集愛心貼紙！"]
+    var prompt := ["挑一個寶可夢朋友，點圖片就會說話！", "聽問題，找出正確的寶可夢！", "一起吃點心、玩耍、休息、打招呼！", "每次互動都可以收集愛心貼紙！", "先選自己的寶可夢，再選對手，按招式就能對決囉！", "可以切換按鈕的中文或英文，語音仍使用中文。"]
     _say(prompt[mode])
 
+
+func _show_battle() -> void:
+    battle_view=PokemonBattle.new()
+    battle_view.name="PokemonBattle"
+    battle_view.configure(pokemon,button_language=="en")
+    battle_view.say_requested.connect(_say)
+    battle_view.leave_requested.connect(_change_mode.bind(0))
+    battle_view.win_recorded.connect(_record_battle_win)
+    content_host.add_child(battle_view)
+
+
+func _record_battle_win(index: int) -> void:
+    var key=str(pokemon[index]["id"])
+    battle_wins[key]=int(battle_wins.get(key,0))+1
+    _add_heart(index,2)
+    _save_progress()
+
+
+func _show_settings() -> void:
+    var panel=_styled_panel(WHITE)
+    content_host.add_child(panel)
+    var col=VBoxContainer.new()
+    col.add_theme_constant_override("separation",13)
+    panel.add_child(col)
+    col.add_child(_label("⚙️ 設定",30,DARK,HORIZONTAL_ALIGNMENT_CENTER))
+    col.add_child(_label("🌍 按鈕說明語言",24,DARK,HORIZONTAL_ALIGNMENT_CENTER))
+    var row=HBoxContainer.new()
+    row.add_theme_constant_override("separation",15)
+    col.add_child(row)
+    var chinese=_pretty_button("🇹🇼 中文",GOLD if button_language=="zh" else PALE,Vector2(220,78))
+    chinese.name="ChineseButtons"
+    chinese.pressed.connect(_change_button_language.bind("zh"))
+    row.add_child(chinese)
+    var english=_pretty_button("🇬🇧 English",GOLD if button_language=="en" else PALE,Vector2(220,78))
+    english.name="EnglishButtons"
+    english.pressed.connect(_change_button_language.bind("en"))
+    row.add_child(english)
+    col.add_child(_label("🔊 語音仍用中文介紹寶可夢，只有按鈕文字切換語言。",20,MUTED,HORIZONTAL_ALIGNMENT_CENTER))
+    col.add_child(_label("👆 可以試著切換，然後點上方圖示看看！",19,MUTED,HORIZONTAL_ALIGNMENT_CENTER))
+    var replay=_pretty_button("🔊 再聽一次",PALE,Vector2(0,58))
+    replay.pressed.connect(func(): _say("上面的按鈕可以選中文或英文，語音會繼續使用中文。"))
+    col.add_child(replay)
+
+
+func _change_button_language(language: String) -> void:
+    if language not in ["zh","en"]:
+        return
+    button_language=language
+    _save_progress()
+    _compose()
+    _say("按鈕已切換成英文！" if language=="en" else "按鈕已切換成中文！")
 
 func _picture(index: int, height_px: float = 160) -> Control:
     var m: Dictionary = pokemon[index]
