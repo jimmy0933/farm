@@ -8,6 +8,7 @@ signal win_recorded(index: int)
 const Rules=preload("res://scripts/PokemonBattleRules.gd")
 const Scenery=preload("res://scripts/PokemonBattleScenery.gd")
 const Arena=preload("res://scripts/PokemonBattleArena.gd")
+const KidsTouchScroll=preload("res://scripts/KidsTouchScroll.gd")
 const INK=Color("#29445B")
 const LIGHT=Color("#FFFFFF")
 const SOFT=Color("#EFF8FC")
@@ -31,6 +32,7 @@ var arena_node: Control
 var battle_biome: String="meadow"
 var scene_variant: int=0
 var move_buttons: Array=[]
+var picker_scroll: ScrollContainer
 var rng:=RandomNumberGenerator.new()
 
 func configure(mons: Array, english: bool=false) -> void:
@@ -145,15 +147,34 @@ func _picker() -> void:
         var back=_button("◀ 重選自己","◀ My Pokémon",Color("#E6EBF8"))
         back.pressed.connect(_back_to_player)
         buttons.add_child(back)
-    var list=ScrollContainer.new()
+    var list_row=HBoxContainer.new()
+    list_row.name="BattleSelectionArea"
+    list_row.size_flags_vertical=Control.SIZE_EXPAND_FILL
+    list_row.add_theme_constant_override("separation",5)
+    root.add_child(list_row)
+    var list=KidsTouchScroll.new()
     list.name="BattleSelectionScroll"
-    list.custom_minimum_size.y=300
+    list.swipe_speed=2.0
+    list.custom_minimum_size.y=260
     list.size_flags_vertical=Control.SIZE_EXPAND_FILL
-    list.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
-    root.add_child(list)
+    list.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+    list_row.add_child(list)
+    picker_scroll=list
+    var nav=VBoxContainer.new()
+    nav.name="BattleSelectionPages"
+    nav.custom_minimum_size.x=58
+    nav.add_theme_constant_override("separation",12)
+    nav.alignment=BoxContainer.ALIGNMENT_CENTER
+    list_row.add_child(nav)
+    for direction in [-1,1]:
+        var arrow=_button("▲" if direction==-1 else "▼","▲" if direction==-1 else "▼",Color("#E6F1FA"))
+        arrow.name="BattlePageUp" if direction==-1 else "BattlePageDown"
+        arrow.custom_minimum_size=Vector2(52,78)
+        arrow.pressed.connect(list.page.bind(direction))
+        nav.add_child(arrow)
     var grid=GridContainer.new()
     grid.name="PokemonChoiceGrid"
-    grid.columns=6 if get_viewport_rect().size.x>=1100.0 else 4
+    grid.columns=4
     grid.size_flags_horizontal=Control.SIZE_EXPAND_FILL
     grid.add_theme_constant_override("h_separation",10)
     grid.add_theme_constant_override("v_separation",8)
@@ -164,7 +185,7 @@ func _picker() -> void:
         var m: Dictionary=roster[i]
         var card=_button("", "",Color(str(m["color"])).lightened(.22))
         card.name="Choose_%d" % int(m["id"])
-        card.custom_minimum_size=Vector2(143,156)
+        card.custom_minimum_size=Vector2(150,151)
         grid.add_child(card)
         var inner=VBoxContainer.new()
         inner.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -178,11 +199,16 @@ func _picker() -> void:
         var nickname=_text(str(m["name"]),18,true)
         nickname.mouse_filter=Control.MOUSE_FILTER_IGNORE
         inner.add_child(nickname)
-        card.pressed.connect(_choose.bind(i))
+        card.pressed.connect(_choose_from_list.bind(i))
     var exit=_button("🏠 回圖鑑","🏠 Back",Color("#E6EEF5"))
     exit.custom_minimum_size.y=43
     exit.pressed.connect(func(): leave_requested.emit())
     root.add_child(exit)
+
+func _choose_from_list(index: int) -> void:
+    if is_instance_valid(picker_scroll) and picker_scroll.was_dragging:
+        return
+    _choose(index)
 
 func _choose(index: int) -> void:
     if index<0 or index>=roster.size():
