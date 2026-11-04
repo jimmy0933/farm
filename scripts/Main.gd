@@ -308,12 +308,19 @@ func _show_friends() -> void:
     left_col.add_theme_constant_override("separation", 6)
     left.add_child(left_col)
     left_col.add_child(_label("✨ 點一位朋友來認識！", 22))
+    # Twelve friends need a scrollable grid so all four rows stay comfortably tappable.
+    left_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    var friend_scroll := ScrollContainer.new()
+    friend_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    friend_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    friend_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    left_col.add_child(friend_scroll)
     var grid := GridContainer.new()
     grid.columns = 3
-    grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     grid.add_theme_constant_override("h_separation", 7)
     grid.add_theme_constant_override("v_separation", 7)
-    left_col.add_child(grid)
+    friend_scroll.add_child(grid)
     for i in range(pokemon.size()):
         grid.add_child(_creature_card(i, _select_friend.bind(i), Vector2(146, 129)))
     _detail_panel(layout)
@@ -525,7 +532,7 @@ func _show_stickers() -> void:
     col.add_child(_label("🌟 我的寶可夢愛心貼紙：%d 顆" % total, 30, DARK, HORIZONTAL_ALIGNMENT_CENTER))
     col.add_child(_label("點一下喜歡的朋友，就能再聽牠說話！", 19, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
     var grid := GridContainer.new()
-    grid.columns = 9
+    grid.columns = 6
     grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
     grid.add_theme_constant_override("h_separation", 5)
     col.add_child(grid)
