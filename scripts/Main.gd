@@ -23,7 +23,7 @@ const EN_BUTTONS={
     "縮入殼中":"Withdraw", "幻象光線":"Psybeam",
     "念力":"Confusion", "火花":"Ember", "抓":"Scratch",
     "水炮":"Hydro Pump", "高速星星":"Swift",
-    "撞擊":"Tackle", "影子球":"Shadow Ball"
+    "撞擊":"Tackle"
 }
 const DARK = Color("#263C55")
 const MUTED = Color("#587084")
@@ -396,6 +396,7 @@ func _creature_card(index: int, press_action: Callable, card_size: Vector2 = Vec
     hit.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
     hit.pressed.connect(press_action)
     panel.add_child(hit)
+    hit.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     return panel
 
 
@@ -438,6 +439,31 @@ func _select_friend(index: int) -> void:
     _say(str(pokemon[index]["intro"]))
 
 
+func _symbol_strip(parent: VBoxContainer, prefix: String, types: Array) -> void:
+    var flow=HFlowContainer.new()
+    flow.add_theme_constant_override("h_separation",5)
+    flow.add_theme_constant_override("v_separation",4)
+    parent.add_child(flow)
+    var marker=_label(prefix,17,MUTED)
+    marker.size_flags_horizontal=Control.SIZE_SHRINK_BEGIN
+    flow.add_child(marker)
+    for type_name in types:
+        var name=str(type_name)
+        var symbol=_label(BattleRules.icon(name),23,DARK,HORIZONTAL_ALIGNMENT_CENTER)
+        symbol.custom_minimum_size=Vector2(31,28)
+        symbol.size_flags_horizontal=Control.SIZE_SHRINK_BEGIN
+        symbol.autowrap_mode=TextServer.AUTOWRAP_OFF
+        symbol.tooltip_text=name+"屬性"
+        var skin=StyleBoxFlat.new()
+        skin.bg_color=BattleRules.type_color(name)
+        skin.set_corner_radius_all(10)
+        skin.content_margin_left=3
+        skin.content_margin_right=3
+        symbol.add_theme_stylebox_override("normal",skin)
+        flow.add_child(symbol)
+
+
+
 func _detail_panel(parent: Control) -> void:
     var m: Dictionary = pokemon[selected]
     var detail := _styled_panel(Color(str(m["color"])).lightened(0.58), 27)
@@ -459,8 +485,20 @@ func _detail_panel(parent: Control) -> void:
     hero.add_child(right)
     right.add_child(_label("No.%04d" % int(m["id"]), 18, MUTED))
     right.add_child(_label(str(m["name"]), 37))
-    right.add_child(_label("  ＋  ".join(PackedStringArray(m["types"])), 24))
-    right.add_child(_label("💗 %d 個愛心" % _heart_count(selected), 19, MUTED))
+    _symbol_strip(right,"🧩",m["types"])
+    _symbol_strip(right,"⚠️",BattleRules.weaknesses(m["types"]))
+    var stats=HBoxContainer.new()
+    stats.add_theme_constant_override("separation",6)
+    right.add_child(stats)
+    var height=_label("📏 %s m" % str(m["height"]),19)
+    height.tooltip_text="身高：%s 公尺" % str(m["height"])
+    height.autowrap_mode=TextServer.AUTOWRAP_OFF
+    stats.add_child(height)
+    var weight=_label("⚖️ %s kg" % str(m["weight"]),19)
+    weight.tooltip_text="體重：%s 公斤" % str(m["weight"])
+    weight.autowrap_mode=TextServer.AUTOWRAP_OFF
+    stats.add_child(weight)
+    right.add_child(_label("💗 %d" % _heart_count(selected),17,MUTED))
     var voice := _pretty_button("🔊 聽我介紹", WHITE, Vector2(220, 56))
     voice.pressed.connect(func(): _say(str(m["intro"])))
     right.add_child(voice)
@@ -471,13 +509,16 @@ func _detail_panel(parent: Control) -> void:
     var row_a := HBoxContainer.new()
     row_a.add_theme_constant_override("separation", 7)
     col.add_child(row_a)
-    var types := _pretty_button("⚡ 屬性", WHITE, Vector2(139, 60))
+    var types := _pretty_button("🧩 屬性", WHITE, Vector2(120, 55))
     types.pressed.connect(_say_types)
     row_a.add_child(types)
-    var measure := _pretty_button("📏 身高體重", WHITE, Vector2(175, 60))
+    var measure := _pretty_button("📏 身高", WHITE, Vector2(122, 55))
     measure.pressed.connect(_say_measurements)
     row_a.add_child(measure)
-    var special := _pretty_button("✨ 特性", WHITE, Vector2(138, 60))
+    var mass := _pretty_button("⚖️ 體重", WHITE, Vector2(122, 55))
+    mass.pressed.connect(_say_measurements)
+    row_a.add_child(mass)
+    var special := _pretty_button("✨ 特性", WHITE, Vector2(122, 55))
     special.pressed.connect(_say_abilities)
     row_a.add_child(special)
 
@@ -497,7 +538,13 @@ func _detail_panel(parent: Control) -> void:
 
 func _say_types() -> void:
     var m: Dictionary = pokemon[selected]
-    _say("%s的屬性是%s。%s" % [m["name"], "和".join(PackedStringArray(m["types"])), m["type_tip"]])
+    var weak=BattleRules.weaknesses(m["types"])
+    var weakness_names=PackedStringArray()
+    for kind in weak:
+        weakness_names.append(str(kind))
+    _say("%s的屬性是%s。比較害怕%s屬性的招式。%s" % [
+        m["name"],"和".join(PackedStringArray(m["types"])),
+        "、".join(weakness_names),m["type_tip"]])
 
 
 func _say_measurements() -> void:
