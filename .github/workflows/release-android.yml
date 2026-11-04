@@ -31,7 +31,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Validate 12 Pokemon data records
+      - name: Validate 15 Pokemon data records
         run: python3 tests/check_data.py
 
       - name: Fetch Pokemon artwork and Traditional Chinese font
@@ -166,7 +166,7 @@ jobs:
               gh release create "$tag" "$APK_PATH#PokemonKids.apk" \
                 --target "$GITHUB_SHA" \
                 --title "寶可夢小小探險隊 - 最新版 ${GITHUB_RUN_NUMBER}" \
-                --notes '4歲語音互動寶可夢遊戲：十二隻朋友、獨立快速滑動角色清單與明細、圖示化圖鑑、五種野外場景寶可夢回合對決與血條、電腦還擊、中文語音、英文按鈕設定、尋找猜猜樂、照顧遊戲與愛心貼紙。非官方私人作品。' \
+                --notes '4歲語音互動寶可夢遊戲：十五隻朋友，新增象牙豬、圓絲蛛、妙蛙種子，獨立快速滑動角色清單與明細、圖示化圖鑑、五種野外場景寶可夢回合對決與血條、電腦還擊、中文語音、英文按鈕設定、尋找猜猜樂、照顧遊戲與愛心貼紙。非官方私人作品。' \
                 --latest || true
             fi
             if gh release view "$tag" >/dev/null 2>&1; then
