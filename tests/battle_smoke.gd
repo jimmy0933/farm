@@ -77,8 +77,12 @@ func _run() -> void:
         if content.get_global_rect().end.y>footer.get_global_rect().position.y+2.0:
             _fail("Scroll content overlays bottom playback controls")
             return
-        if content.get_v_scroll_bar().max_value<=content.size.y:
-            _fail("Long Pokedex details should be scrollable on a compact phone")
+        var details=main.pokemon_detail_scroll
+        if details==null or details.get_v_scroll_bar().max_value-details.get_v_scroll_bar().page<15:
+            _fail("Long Pokedex details must scroll INSIDE their own fixed right panel")
+            return
+        if content.vertical_scroll_mode!=ScrollContainer.SCROLL_MODE_DISABLED:
+            _fail("Outer Pokedex should not steal swipes from independent roster and detail panes")
             return
 
         main._change_mode(5)
