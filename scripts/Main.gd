@@ -7,6 +7,7 @@ const MODE_ICONS = ["📖", "🎯", "💗", "🌟", "⚔️", "⚙️"]
 const PokemonBattle=preload("res://scripts/PokemonBattle.gd")
 const BattleRules=preload("res://scripts/PokemonBattleRules.gd")
 const KidsTouchScroll=preload("res://scripts/KidsTouchScroll.gd")
+const TypeDetail=preload("res://scripts/PokemonTypeDetail.gd")
 const EN_BUTTONS={
     "圖鑑":"Pokédex", "玩遊戲":"Guess", "照顧朋友":"Care",
     "貼紙館":"Stickers", "寶可夢對決":"Battle", "設定":"Settings",
@@ -48,6 +49,7 @@ var battle_view: Control
 var content_scroller: ScrollContainer
 var pokemon_roster_scroll: ScrollContainer
 var pokemon_detail_scroll: ScrollContainer
+var type_detail_popup: Control
 var roster_scroll_position: int=0
 var last_speech: String = ""
 var voice_id: String = ""
@@ -215,6 +217,7 @@ func _gap(parent: Node, value: int = 10) -> void:
 
 
 func _compose() -> void:
+    type_detail_popup=null
     for child in get_children():
         remove_child(child)
         child.queue_free()
@@ -532,6 +535,61 @@ func _symbol_strip(parent: VBoxContainer, prefix: String, types: Array) -> void:
 
 
 
+func _type_badge_panel(parent: VBoxContainer, types: Array) -> void:
+    var wrapper=_styled_panel(Color("#E7F7FB"),18)
+    wrapper.name="TypeBadgePanel"
+    parent.add_child(wrapper)
+    var col=VBoxContainer.new()
+    col.add_theme_constant_override("separation",6)
+    wrapper.add_child(col)
+    col.add_child(_label("🧩 點大圖示看屬性與弱點",21,DARK))
+    var row=HBoxContainer.new()
+    row.add_theme_constant_override("separation",10)
+    col.add_child(row)
+    for type_name in types:
+        var kind=str(type_name)
+        var background=BattleRules.type_color(kind).lightened(.08)
+        var badge=_pretty_button(BattleRules.icon(kind)+"  "+kind+"  ⓘ",background,Vector2(146,74))
+        badge.name="TypeBadge_"+kind
+        badge.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+        badge.add_theme_font_size_override("font_size",29)
+        badge.tooltip_text="%s屬性，點擊看大圖示、介紹和弱點" % kind
+        badge.pressed.connect(_open_type_detail.bind(kind))
+        row.add_child(badge)
+
+
+func _open_type_detail(kind: String) -> void:
+    if not BattleRules.TYPE_ICONS.has(kind):
+        return
+    if is_instance_valid(type_detail_popup):
+        _close_type_detail()
+    # KidsTouchScroll uses _input; temporarily disable behind modal so an
+    # exploratory swipe on the popup never moves the Pokedex underneath.
+    if is_instance_valid(pokemon_roster_scroll):
+        pokemon_roster_scroll.set_process_input(false)
+    if is_instance_valid(pokemon_detail_scroll):
+        pokemon_detail_scroll.set_process_input(false)
+    var popup=TypeDetail.new()
+    popup.configure(pokemon[selected],kind,button_language=="en")
+    popup.close_requested.connect(_close_type_detail)
+    popup.speak_requested.connect(_say)
+    add_child(popup)
+    popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    type_detail_popup=popup
+
+
+func _close_type_detail() -> void:
+    if is_instance_valid(type_detail_popup):
+        var popup=type_detail_popup
+        type_detail_popup=null
+        remove_child(popup)
+        popup.queue_free()
+    if is_instance_valid(pokemon_roster_scroll):
+        pokemon_roster_scroll.set_process_input(true)
+    if is_instance_valid(pokemon_detail_scroll):
+        pokemon_detail_scroll.set_process_input(true)
+
+
 func _detail_panel(parent: Control) -> void:
     var m: Dictionary = pokemon[selected]
     var detail := _styled_panel(Color(str(m["color"])).lightened(0.58), 27)
@@ -569,8 +627,6 @@ func _detail_panel(parent: Control) -> void:
     hero.add_child(right)
     right.add_child(_label("No.%04d" % int(m["id"]), 18, MUTED))
     right.add_child(_label(str(m["name"]), 37))
-    _symbol_strip(right,"🧩",m["types"])
-    _symbol_strip(right,"⚠️",BattleRules.weaknesses(m["types"]))
     var stats=HBoxContainer.new()
     stats.add_theme_constant_override("separation",6)
     right.add_child(stats)
@@ -586,6 +642,7 @@ func _detail_panel(parent: Control) -> void:
     var voice := _pretty_button("🔊 聽我介紹", WHITE, Vector2(220, 56))
     voice.pressed.connect(func(): _say(str(m["intro"])))
     right.add_child(voice)
+    _type_badge_panel(col,m["types"])
 
     var bubble := _styled_panel(WHITE, 16)
     col.add_child(bubble)
@@ -593,8 +650,8 @@ func _detail_panel(parent: Control) -> void:
     var row_a := HBoxContainer.new()
     row_a.add_theme_constant_override("separation", 7)
     col.add_child(row_a)
-    var types := _pretty_button("🧩 屬性", WHITE, Vector2(120, 55))
-    types.pressed.connect(_say_types)
+    var types := _pretty_button("🔍 屬性", WHITE, Vector2(120, 55))
+    types.pressed.connect(_open_type_detail.bind(str(m["types"][0])))
     row_a.add_child(types)
     var measure := _pretty_button("📏 身高", WHITE, Vector2(122, 55))
     measure.pressed.connect(_say_measurements)
