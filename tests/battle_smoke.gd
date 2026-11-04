@@ -69,8 +69,10 @@ func _run() -> void:
         if footer==null or content==null:
             _fail("Fixed voice footer and middle scroll container are missing")
             return
-        if footer.get_global_rect().end.y>float(screen_size.y)+1.0:
-            _fail("Voice buttons are clipped below the display in Pokedex")
+        var logical_bounds=main.get_global_rect()
+        print("LAYOUT logical=",logical_bounds," device=",screen_size," footer=",footer.get_global_rect()," scroll=",content.get_global_rect())
+        if footer.get_global_rect().end.y>logical_bounds.end.y+1.0 or footer.get_global_rect().position.y<logical_bounds.position.y-1.0:
+            _fail("Voice buttons are clipped below the logical viewport in Pokedex: "+str(screen_size))
             return
         if content.get_global_rect().end.y>footer.get_global_rect().position.y+2.0:
             _fail("Scroll content overlays bottom playback controls")
