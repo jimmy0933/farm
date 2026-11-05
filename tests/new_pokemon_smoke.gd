@@ -82,6 +82,7 @@ func _run() -> void:
             game._change_mode(4)
             await process_frame
             var battle=game.battle_view
+            battle.quick_test_mode=true
             if battle.roster.size()!=15:
                 _fail("Battle roster didn't update to 15 Pokemon")
                 return
@@ -92,6 +93,7 @@ func _run() -> void:
                 _fail("New Pokemon cannot battle Pikachu: "+str(id))
                 return
             battle.play_move(0)
+            await create_timer(.22).timeout
             if battle.opponent_hp>=100:
                 _fail("New Pokemon's battle attack did no damage: "+str(id))
                 return
