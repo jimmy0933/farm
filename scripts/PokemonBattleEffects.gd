@@ -102,7 +102,7 @@ func _draw() -> void:
         var charge_radius=(28.0+phase*42.0)*strength
         _circle(from,charge_radius*1.23,Color(aura,.06+.12*pulse))
         draw_arc(from,charge_radius,0,TAU,64,Color(color,.65),6.0,true)
-        draw_arc(from,charge_radius*.76,0,TAU,64,Color.WHITE,.68),3.3,true)
+        draw_arc(from,charge_radius*.76,0,TAU,64,Color(Color.WHITE,.68),3.3,true)
         for i in range(16):
             var angle=TAU*float(i)/16.0+phase*1.8
             var r=charge_radius*(1.10+float(i%3)*.2)
@@ -122,7 +122,7 @@ func _draw() -> void:
             var position=from.lerp(projectile,fade)
             _circle(position,(15.0+fade*7.0)*strength,Color(color,(.09+.15*fade)*travel))
         draw_line(from,projectile,Color(aura,.28),19.0*strength,true)
-        draw_line(from,projectile,Color.WHITE,.55),3.5*strength,true)
+        draw_line(from,projectile,Color(Color.WHITE,.55),3.5*strength,true)
     var orbit=37.0*strength
     if element=="電":
         var points=PackedVector2Array([from])
