@@ -53,6 +53,9 @@ var type_detail_popup: Control
 var roster_scroll_position: int=0
 var last_speech: String = ""
 var voice_id: String = ""
+var speech_serial: int=0
+var speech_finished_serial: int=0
+var speech_callbacks_enabled: bool=false
 var rng := RandomNumberGenerator.new()
 var content_host: VBoxContainer
 var caption_label: Label
@@ -70,6 +73,7 @@ func _ready() -> void:
     _read_progress()
     _set_chinese_font()
     _choose_voice()
+    _install_speech_callbacks()
     _compose()
     call_deferred("_welcome")
 
@@ -101,21 +105,59 @@ func _welcome() -> void:
     _say("歡迎來到寶可夢小小探險隊！點一隻寶可夢，就能聽牠介紹自己。我們一起玩吧！")
 
 
+func _install_speech_callbacks() -> void:
+    if not DisplayServer.has_feature(DisplayServer.FEATURE_TEXT_TO_SPEECH):
+        return
+    # Godot reports the exact utterance ID when Android finishes narration.
+    # This replaces the old fixed 0.9-second handover during battles.
+    DisplayServer.tts_set_utterance_callback(DisplayServer.TTS_UTTERANCE_ENDED,Callable(self,"_on_speech_completed"))
+    DisplayServer.tts_set_utterance_callback(DisplayServer.TTS_UTTERANCE_CANCELED,Callable(self,"_on_speech_completed"))
+    speech_callbacks_enabled=true
+
+
+func _on_speech_completed(utterance_id: int) -> void:
+    if utterance_id==speech_serial:
+        speech_finished_serial=utterance_id
+
+
 func _say(message: String) -> void:
-    last_speech = message
+    last_speech=message
+    speech_serial+=1
     if is_instance_valid(caption_label):
-        caption_label.text = "🔊 " + message
+        caption_label.text="🔊 "+message
     if not DisplayServer.has_feature(DisplayServer.FEATURE_TEXT_TO_SPEECH):
         if is_instance_valid(voice_note):
-            voice_note.text = "需要手機語音功能"
+            voice_note.text="需要手機語音功能"
+        speech_finished_serial=speech_serial
         return
     if voice_id.is_empty():
         _choose_voice()
     if not voice_id.is_empty():
-        DisplayServer.tts_speak(message, voice_id, 100, 1.07, 0.85, 0, true)
-    elif is_instance_valid(voice_note):
-        voice_note.text = "請安裝繁體中文語音"
+        DisplayServer.tts_speak(message,voice_id,100,1.07,0.85,speech_serial,true)
+    else:
+        speech_finished_serial=speech_serial
+        if is_instance_valid(voice_note):
+            voice_note.text="請安裝繁體中文語音"
 
+
+func _say_and_wait(message: String) -> void:
+    # When Android provides TTS completion callbacks, wait for the actual
+    # narration to finish. A generous safety timeout handles broken engines;
+    # no-voice devices use an accessible timed pause instead.
+    _say(message)
+    var current_id=speech_serial
+    var voice_available=speech_callbacks_enabled and not voice_id.is_empty()
+    if not voice_available:
+        await get_tree().create_timer(clampf(float(message.length())*.07,1.1,2.6)).timeout
+        return
+    var max_seconds=clampf(float(message.length())*.29+3.0,4.0,22.0)
+    var elapsed=0.0
+    while is_inside_tree() and speech_serial==current_id and speech_finished_serial!=current_id and elapsed<max_seconds:
+        await get_tree().create_timer(.10).timeout
+        elapsed+=.10
+    # Never issue a second narration until any TTS engine stall is resolved.
+    if speech_serial==current_id and speech_finished_serial!=current_id and DisplayServer.tts_is_speaking():
+        DisplayServer.tts_stop()
 
 func _read_progress() -> void:
     if not FileAccess.file_exists("user://pokemon_kids_progress.json"):
@@ -328,7 +370,7 @@ func _change_mode(index: int) -> void:
 func _show_battle() -> void:
     battle_view=PokemonBattle.new()
     battle_view.name="PokemonBattle"
-    battle_view.configure(pokemon,button_language=="en")
+    battle_view.configure(pokemon,button_language=="en",self)
     battle_view.say_requested.connect(_say)
     battle_view.leave_requested.connect(_change_mode.bind(0))
     battle_view.win_recorded.connect(_record_battle_win)
