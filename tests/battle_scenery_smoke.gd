@@ -66,13 +66,14 @@ func _run() -> void:
             _fail("Pikachu's strong attack must trigger electric particles")
             return
         var effects=battle.arena_node.effects
-        await create_timer(.82).timeout
-        if not is_instance_valid(effects) or effects.active:
-            _fail("Projectile should dissipate without lingering visual effects")
-            return
-        await create_timer(.3).timeout
+        # The arena may be replaced after the full CPU reply; check the
+        # currently visible scene, not an old detached effect reference.
+        await create_timer(1.15).timeout
         if battle.busy:
             _fail("The scenic overlay must not block the CPU counterattack")
+            return
+        if battle.arena_node.effects.active:
+            _fail("Battle effects must expire after both quick-test turns")
             return
         # Switching enemy selects environment without changing user Pokemon.
         for pair in [[4,"forest"],[5,"lakeside"],[8,"sunset"],[2,"meadow"]]:
