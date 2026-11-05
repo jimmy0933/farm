@@ -89,19 +89,91 @@ func _create_characters() -> void:
     star.mouse_filter=Control.MOUSE_FILTER_IGNORE
     add_child(star)
 
-func play_impact(player_attacks: bool,move_type: String,damage: int,efficacy: float) -> void:
-    if is_instance_valid(effects):
-        effects.trigger(move_type,player_attacks,damage,efficacy)
+var fallen_player: bool=false
+var fallen_opponent: bool=false
+
+
+func play_attack_sequence(player_attacks: bool,move_type: String,damage: int,efficacy: float,strong_move: bool=false,fast_test: bool=false) -> void:
+    if not is_instance_valid(effects):
+        return
+    effects.trigger(move_type,player_attacks,damage,efficacy,strong_move)
+    var total=effects.duration
+    if fast_test:
+        effects.duration=.10
+        total=.10
     var shooter=player_portrait if player_attacks else opponent_portrait
     var target=opponent_portrait if player_attacks else player_portrait
     if is_instance_valid(shooter):
         shooter.pivot_offset=shooter.size*.5
-        var jump=create_tween()
-        jump.tween_property(shooter,"scale",Vector2(1.08,1.08),.13).set_trans(Tween.TRANS_BACK)
-        jump.tween_property(shooter,"scale",Vector2.ONE,.2)
+        var charge=create_tween()
+        charge.tween_property(shooter,"scale",Vector2(1.16,1.16),total*.23).set_trans(Tween.TRANS_SINE)
+        charge.tween_property(shooter,"scale",Vector2(1.05,1.05),total*.45)
+        charge.tween_property(shooter,"scale",Vector2.ONE,total*.32)
     if is_instance_valid(target):
         target.pivot_offset=target.size*.5
         var hit=create_tween()
-        var tint=Color("#FCE5A9") if damage>0 else Color("#BBD5E9")
-        hit.tween_property(target,"modulate",tint,.12)
-        hit.tween_property(target,"modulate",Color.WHITE,.29)
+        hit.tween_interval(total*.70)
+        var tint=Color("#FFE5AE") if damage>0 else Color("#C8DAEE")
+        hit.tween_property(target,"modulate",tint,total*.10)
+        hit.tween_property(target,"modulate",Color.WHITE,total*.20)
+    await get_tree().create_timer(total+.03).timeout
+
+
+func play_fall_sequence(is_player: bool,fast_test: bool=false) -> void:
+    var target=player_portrait if is_player else opponent_portrait
+    if not is_instance_valid(target):
+        return
+    if is_player:
+        fallen_player=true
+    else:
+        fallen_opponent=true
+    target.pivot_offset=target.size*.55
+    var fall_seconds=.22 if fast_test else .90
+    var angle=-72.0 if is_player else 72.0
+    var dust=Label.new()
+    dust.name="KnockoutDust"
+    dust.text="☁️  ✨  ⭐  ✨"
+    dust.add_theme_font_size_override("font_size",29)
+    dust.add_theme_color_override("font_color",Color("#FBE7B7"))
+    dust.mouse_filter=Control.MOUSE_FILTER_IGNORE
+    var midpoint=target.get_global_rect().get_center()-get_global_rect().position
+    dust.position=midpoint+Vector2(-74,20)
+    add_child(dust)
+    var stars=Label.new()
+    stars.name="KnockoutStars"
+    stars.text="⭐  💫  ⭐"
+    stars.add_theme_font_size_override("font_size",34)
+    stars.mouse_filter=Control.MOUSE_FILTER_IGNORE
+    stars.position=midpoint+Vector2(-68,-49)
+    add_child(stars)
+    var motion=create_tween()
+    motion.set_parallel(true)
+    motion.tween_property(target,"rotation_degrees",angle,fall_seconds).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+    motion.tween_property(target,"position:y",target.position.y+24.0,fall_seconds)
+    motion.tween_property(target,"scale",Vector2(.88,.77),fall_seconds)
+    motion.tween_property(target,"modulate:a",.72,fall_seconds)
+    motion.tween_property(stars,"position:y",stars.position.y-26.0,fall_seconds)
+    motion.tween_property(stars,"modulate:a",.2,fall_seconds)
+    motion.tween_property(dust,"modulate:a",0.0,fall_seconds)
+    await motion.finished
+    if is_instance_valid(stars):
+        stars.queue_free()
+    if is_instance_valid(dust):
+        dust.queue_free()
+
+
+func apply_fallen_pose(is_player: bool) -> void:
+    # Called after the result controls rebuild the arena; keep the losing
+    # Pokemon lying down instead of popping upright after the KO animation.
+    var target=player_portrait if is_player else opponent_portrait
+    if not is_instance_valid(target):
+        return
+    target.pivot_offset=target.size*.55
+    target.rotation_degrees=-72.0 if is_player else 72.0
+    target.position.y+=24.0
+    target.scale=Vector2(.88,.77)
+    target.modulate.a=.72
+    if is_player:
+        fallen_player=true
+    else:
+        fallen_opponent=true
