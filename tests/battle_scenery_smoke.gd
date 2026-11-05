@@ -29,6 +29,7 @@ func _run() -> void:
         main._change_mode(4)
         await process_frame
         var battle=main.battle_view
+        battle.quick_test_mode=true
         battle._choose(0)
         battle._choose(1) # Gengar: ghost forest.
         await process_frame
@@ -57,7 +58,7 @@ func _run() -> void:
             _fail("Arena should fit above fixed speech bar on compact landscape")
             return
         battle.play_move(1)
-        await process_frame
+        await create_timer(.07).timeout
         if not battle.arena_node.effects.active:
             _fail("Attack should launch animated particles on the arena")
             return
