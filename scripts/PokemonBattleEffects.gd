@@ -1,10 +1,15 @@
 extends Control
 ## A single animated overlay above the landscape and below the battle HUD.
-## No gore, shaking camera or strobing flashes. 0.72s friendly effects.
+## Three clear phases: charge, flying projectile and sparkling impact. No strobing.
 const Rules=preload("res://scripts/PokemonBattleRules.gd")
 var active: bool=false
 var age: float=0.0
-var duration: float=.77
+const NORMAL_DURATION: float=1.35
+const STRONG_DURATION: float=1.82
+const HIT_FRACTION: float=.71
+var duration: float=NORMAL_DURATION
+var strong_move: bool=false
+var impact_started: bool=false
 var element: String="一般"
 var player_attacking: bool=true
 var damage: int=0
@@ -14,19 +19,24 @@ func _ready() -> void:
     mouse_filter=Control.MOUSE_FILTER_IGNORE
     set_process(false)
 
-func trigger(kind: String, from_player: bool, amount: int, effectiveness: float) -> void:
+func trigger(kind: String, from_player: bool, amount: int, effectiveness: float, strong: bool=false) -> void:
     element=kind
+    strong_move=strong
+    duration=STRONG_DURATION if strong else NORMAL_DURATION
+    impact_started=false
     player_attacking=from_player
     damage=amount
     efficacy=effectiveness
     age=0.0
     active=true
     set_process(true)
-    _damage_popup()
     queue_redraw()
 
 func _process(delta: float) -> void:
     age+=delta
+    if not impact_started and age>=duration*HIT_FRACTION:
+        impact_started=true
+        _damage_popup()
     if age>=duration:
         active=false
         set_process(false)
@@ -67,8 +77,8 @@ func _damage_popup() -> void:
     label.scale=Vector2(.82,.82)
     var tw=create_tween()
     tw.set_parallel(true)
-    tw.tween_property(label,"position",label.position+Vector2(0,-40),.75)
-    tw.tween_property(label,"modulate:a",0.0,.75)
+    tw.tween_property(label,"position",label.position+Vector2(0,-56),.95)
+    tw.tween_property(label,"modulate:a",0.0,.95)
     tw.tween_property(label,"scale",Vector2(1.12,1.12),.3).set_trans(Tween.TRANS_BACK)
     tw.finished.connect(func():
         if is_instance_valid(label):
@@ -82,63 +92,98 @@ func _draw() -> void:
     var progress=clampf(age/duration,0.0,1.0)
     var from=Vector2(302,305) if player_attacking else Vector2(748,176)
     var toward=Vector2(748,179) if player_attacking else Vector2(302,300)
-    var traveling=clampf(progress*1.8,0.0,1.0)
-    var projectile=from.lerp(toward,traveling)
+    var strength=1.24 if strong_move else 1.0
     var color=Rules.type_color(element)
-    var opacity=maxf(0.0,1.0-progress*.84)
+    var aura=color.lerp(Color.WHITE,.43)
+    # Stage 1: a large, breathing, layered elemental power-up circle.
+    if progress<.25:
+        var phase=progress/.25
+        var pulse=sin(phase*PI*.9)
+        var charge_radius=(28.0+phase*42.0)*strength
+        _circle(from,charge_radius*1.23,Color(aura,.06+.12*pulse))
+        draw_arc(from,charge_radius,0,TAU,64,Color(color,.65),6.0,true)
+        draw_arc(from,charge_radius*.76,0,TAU,64,Color.WHITE,.68),3.3,true)
+        for i in range(16):
+            var angle=TAU*float(i)/16.0+phase*1.8
+            var r=charge_radius*(1.10+float(i%3)*.2)
+            var particle=from+Vector2(cos(angle),sin(angle))*r
+            _star(particle,(4.5+float(i%3)*2.0)*strength,Color("#FFFFFF",.55+.35*pulse))
+        draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
+        return
+    var flying=progress< HIT_FRACTION
+    var travel=clampf((progress-.25)/(HIT_FRACTION-.25),0.0,1.0)
+    travel=travel*travel*(3.0-2.0*travel)
+    var projectile=from.lerp(toward,travel) if flying else toward
+    var opacity=1.0 if flying else maxf(0.0,1.0-(progress-HIT_FRACTION)/(1.0-HIT_FRACTION))
+    if flying:
+        # Thick transparent tail, thin white streak, spark clusters.
+        for i in range(9):
+            var fade=float(i)/9.0
+            var position=from.lerp(projectile,fade)
+            _circle(position,(15.0+fade*7.0)*strength,Color(color,(.09+.15*fade)*travel))
+        draw_line(from,projectile,Color(aura,.28),19.0*strength,true)
+        draw_line(from,projectile,Color.WHITE,.55),3.5*strength,true)
+    var orbit=37.0*strength
     if element=="電":
-        # Soft zigzag lightning and scattered glowing sparkles.
         var points=PackedVector2Array([from])
-        for i in range(1,7):
-            var t=float(i)/7.0
+        for i in range(1,11):
+            var t=float(i)/11.0
             var base=from.lerp(projectile,t)
-            base+=Vector2(0,sin(float(i)*2.6+age*12.0)*22.0)
+            base+=Vector2(0,sin(float(i)*2.4+age*17.0)*25.0*strength)
             points.append(base)
         points.append(projectile)
-        draw_polyline(points,Color("#FFF6B0",opacity),10.0,true)
-        draw_polyline(points,Color("#FFFFFF",opacity),3.0,true)
-        for i in range(9):
-            var theta=float(i)*TAU/9.0+age*6.0
-            _star(projectile+Vector2(cos(theta),sin(theta))*29.0,5.0,Color("#FFEEA5",opacity))
+        draw_polyline(points,Color("#FFE99C",opacity*.9),15.0*strength,true)
+        draw_polyline(points,Color("#FFFFFF",opacity),4.0*strength,true)
+        for i in range(17):
+            var a=TAU*float(i)/17.0+age*5.2
+            _star(projectile+Vector2(cos(a),sin(a))*orbit,7.0*strength,Color("#FFF0A0",opacity))
     elif element=="水" or element=="冰":
-        for i in range(8):
-            var offset=Vector2(cos(float(i)*2.4),sin(float(i)*2.4))*float(12+i%3*7)
-            _circle(projectile+offset,12.0 if element=="水" else 8.0,Color("#7CD3EF",opacity))
-            _circle(projectile+offset-Vector2(3,5),4,Color("#E6FBFF",opacity))
-        if progress>.4:
-            draw_arc(toward,42.0+progress*31.0,0,TAU,52,Color("#D3F8FA",opacity),6,true)
+        for i in range(17):
+            var angle=TAU*float(i)/17.0+age*2.2
+            var r=20.0+float(i%4)*10.0
+            var p=projectile+Vector2(cos(angle)*r,sin(angle)*r*.83)
+            _circle(p,(9.0+float(i%4)*2.0)*strength,Color("#8FE2F9",opacity*.82))
+            _circle(p-Vector2(3,5),3.0,Color("#FFFFFF",opacity))
+        if not flying:
+            draw_arc(toward,35.0+(progress-HIT_FRACTION)*275.0,0,TAU,64,Color("#DAF9FF",opacity),8.0,true)
     elif element=="火":
-        for i in range(12):
-            var theta=float(i)*TAU/12.0
-            var radius=12.0+float(i%4)*5.0
+        for i in range(19):
+            var theta=TAU*float(i)/19.0+age*3.0
+            var radius=16.0+float(i%5)*8.0
             var p=projectile+Vector2(cos(theta)*radius,sin(theta)*radius)
-            _circle(p,7.0+float(i%3)*2.0,Color("#FFA866",opacity))
-            _circle(p-Vector2(1,3),3.0,Color("#FFF2B9",opacity))
+            _circle(p,(7.0+float(i%4)*3.0)*strength,Color("#FF9B50",opacity))
+            _circle(p-Vector2(0,3),4.0,Color("#FFF0AB",opacity))
     elif element=="草" or element=="蟲":
-        for i in range(13):
-            var p=projectile+Vector2(cos(float(i)*2.25)*35.0,sin(float(i)*2.25)*27.0)
-            _leaf(p,.72,float(i)*.65+progress*4.0,Color("#79C47C",opacity))
-        _circle(projectile,17,Color("#E7F9B8",opacity*.5))
+        for i in range(23):
+            var angle=TAU*float(i)/23.0+age*4.0
+            var r=19.0+float(i%5)*10.0
+            var p=projectile+Vector2(cos(angle)*r,sin(angle)*r*.83)
+            _leaf(p,.82*strength,angle+.55,Color("#8ED57E",opacity))
+        _circle(projectile,23,Color("#F3FFC9",opacity*.6))
     elif element=="幽靈" or element=="毒" or element=="超能力" or element=="惡":
-        _circle(projectile,41,Color("#B28DDC",opacity*.18))
-        _circle(projectile,26,Color("#A992D7",opacity*.7))
-        _circle(projectile,15,Color("#F4D8FA",opacity*.86))
-        for i in range(7):
-            var theta=float(i)*TAU/7.0+progress*6.0
-            var p=projectile+Vector2(cos(theta)*48.0,sin(theta)*35.0)
-            _circle(p,7.5,Color("#D6B6F3",opacity))
+        for scale_factor in [1.9,1.35,.9]:
+            _circle(projectile,30.0*scale_factor*strength,Color("#B88DDB",opacity*.11))
+        _circle(projectile,28.0*strength,Color("#9D72D2",opacity*.81))
+        _circle(projectile,13.0*strength,Color("#F5E1FD",opacity))
+        for i in range(16):
+            var angle=TAU*float(i)/16.0+age*5.8
+            var p=projectile+Vector2(cos(angle)*58.0,sin(angle)*42.0)
+            _circle(p,7.0*strength,Color("#DFC0F7",opacity))
     else:
-        for i in range(9):
-            var theta=float(i)*TAU/9.0+age*.8
-            var p=projectile+Vector2(cos(theta)*34.0,sin(theta)*31.0)
-            _star(p,9.0,Color("#FFF2CB",opacity))
-        _circle(projectile,14,Color("#FFFFFF",opacity*.65))
-    if progress>.35:
-        var impact=clampf((progress-.35)/.65,0,1)
-        var ring_radius=24.0+impact*92.0
-        draw_arc(toward,ring_radius,0,TAU,48,Color(color,opacity*.66),4.0,true)
-        for i in range(9):
-            var a=float(i)*TAU/9.0
-            var p=toward+Vector2(cos(a),sin(a))*ring_radius*.75
-            _star(p,4.5,Color("#FFFFFF",opacity*.73))
+        for i in range(16):
+            var a=TAU*float(i)/16.0+age*.8
+            var p=projectile+Vector2(cos(a)*46.0,sin(a)*39.0)
+            _star(p,10.0*strength,Color("#FFF2CB",opacity))
+        _circle(projectile,19,Color("#FFFFFF",opacity*.77))
+    # Stage 3: translucent expanding rings and a soft shower of stars.
+    if not flying:
+        var impact=clampf((progress-HIT_FRACTION)/(1.0-HIT_FRACTION),0,1)
+        for ring in range(3):
+            var radius=(23.0+impact*175.0+float(ring)*31.0)*strength
+            draw_arc(toward,radius,0,TAU,64,Color(aura,opacity*(.8-float(ring)*.14)),(8.0-float(ring)*2.0),true)
+        for i in range(27):
+            var theta=TAU*float(i)/27.0+float(i%3)*.2
+            var distance=(25.0+impact*(78.0+float(i%5)*17.0))*strength
+            var p=toward+Vector2(cos(theta),sin(theta))*distance
+            _star(p,(6.0+float(i%3)*2.4)*strength,Color("#FFFFFF",opacity*.96))
     draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
