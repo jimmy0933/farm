@@ -116,6 +116,7 @@ func _run() -> void:
             _fail("Selecting my Pokemon must advance to opponent selection")
             return
         battle._choose(1)
+        battle.quick_test_mode=true
         await process_frame
         if battle.opponent_index!=1 or battle.player_hp!=100 or battle.opponent_hp!=100:
             _fail("Chosen opponent needs an independent full HP bar")
@@ -129,7 +130,11 @@ func _run() -> void:
             _fail("English battle needs two large translated move buttons")
             return
         battle.play_move(1)
-        if not battle.busy or battle.opponent_hp>=100:
+        if not battle.busy:
+            _fail("Battle must lock buttons until speech animation and opponent reply finish")
+            return
+        await create_timer(.22).timeout
+        if battle.opponent_hp>=100:
             _fail("Attacking must subtract damage and wait for CPU reply")
             return
         var hp_after_hit=battle.opponent_hp
@@ -152,7 +157,7 @@ func _run() -> void:
         battle.opponent_hp=1
         var wins_before=int(main.battle_wins.get(str(main.pokemon[0]["id"]),0))
         battle.play_move(0)
-        await process_frame
+        await create_timer(.60).timeout
         if not battle.finished or battle.opponent_hp!=0 or int(main.battle_wins.get(str(main.pokemon[0]["id"]),0))!=wins_before+1:
             _fail("Fainting opponent must finish battle and persist one victory")
             return
@@ -162,7 +167,7 @@ func _run() -> void:
             return
         battle._start()
         battle.player_hp=1
-        battle._cpu_turn()
+        await battle._cpu_turn()
         if not battle.finished or battle.player_hp!=0:
             _fail("Opponent victory must also stop at zero HP")
             return
