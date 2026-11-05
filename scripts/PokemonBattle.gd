@@ -33,11 +33,20 @@ var battle_biome: String="meadow"
 var scene_variant: int=0
 var move_buttons: Array=[]
 var picker_scroll: ScrollContainer
+var speech_host: Node
+var quick_test_mode: bool=false
+var turn_generation: int=0
+var player_health_bar: ProgressBar
+var opponent_health_bar: ProgressBar
+var player_hp_label: Label
+var opponent_hp_label: Label
+var status_label: Label
 var rng:=RandomNumberGenerator.new()
 
-func configure(mons: Array, english: bool=false) -> void:
+func configure(mons: Array, english: bool=false, narrator: Node=null) -> void:
     roster=mons
     english_buttons=english
+    speech_host=narrator
     rng.randomize()
 
 func _ready() -> void:
@@ -222,6 +231,7 @@ func _choose(index: int) -> void:
         _start()
 
 func _back_to_player() -> void:
+    turn_generation+=1
     player_index=-1
     opponent_index=-1
     _render()
@@ -237,6 +247,7 @@ func _choose_random_opponent() -> void:
     _start()
 
 func _start() -> void:
+    turn_generation+=1
     player_hp=Rules.MAX_HP
     opponent_hp=Rules.MAX_HP
     player_strong_rest=0
@@ -274,7 +285,15 @@ func _health_bar(value: int, is_player: bool) -> VBoxContainer:
     fill.set_corner_radius_all(11)
     bar.add_theme_stylebox_override("fill",fill)
     root.add_child(bar)
-    root.add_child(_text("❤️ %d / 100" % value,17,true))
+    var hp_text=_text("❤️ %d / 100" % value,17,true)
+    hp_text.name="PlayerHPText" if is_player else "OpponentHPText"
+    root.add_child(hp_text)
+    if is_player:
+        player_health_bar=bar
+        player_hp_label=hp_text
+    else:
+        opponent_health_bar=bar
+        opponent_hp_label=hp_text
     return root
 
 func _hud_panel(content: Control) -> PanelContainer:
@@ -334,6 +353,7 @@ func _battle() -> void:
     root.add_child(message_box)
     var status=_text(last_message,19 if compact else 20,true)
     status.name="BattleStatus"
+    status_label=status
     status.custom_minimum_size.y=31 if compact else 37
     status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
     message_box.add_child(status)
@@ -378,8 +398,57 @@ func _battle() -> void:
     root.add_child(leave)
 
 func _new_opponent() -> void:
+    turn_generation+=1
+    busy=false
     opponent_index=-1
     _render()
+
+
+func _turn_valid(token: int) -> bool:
+    return is_inside_tree() and token==turn_generation and not finished and player_index>=0 and opponent_index>=0
+
+
+func _set_battle_message(message: String) -> void:
+    last_message=message
+    if is_instance_valid(status_label):
+        status_label.text=message
+
+
+func _lock_attacks() -> void:
+    for button in move_buttons:
+        if is_instance_valid(button):
+            button.disabled=true
+
+
+func _narrate_and_wait(message: String) -> void:
+    # Headless tests can shorten the conversation; release builds always
+    # wait for Main's real Android TTS_UTTERANCE_ENDED callback.
+    if quick_test_mode:
+        say_requested.emit(message)
+        await get_tree().create_timer(.035).timeout
+    elif is_instance_valid(speech_host) and speech_host.has_method("_say_and_wait"):
+        await speech_host._say_and_wait(message)
+    else:
+        say_requested.emit(message)
+        await get_tree().create_timer(1.1).timeout
+
+
+func _animate_health(is_player: bool,initial: int,remaining: int) -> void:
+    var gauge=player_health_bar if is_player else opponent_health_bar
+    var caption=player_hp_label if is_player else opponent_hp_label
+    if not is_instance_valid(gauge):
+        return
+    gauge.value=initial
+    var seconds=.05 if quick_test_mode else .49
+    var tween=create_tween()
+    tween.tween_property(gauge,"value",remaining,seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+    await tween.finished
+    if is_instance_valid(caption):
+        caption.text="❤️ %d / 100" % remaining
+    var fill=gauge.get_theme_stylebox("fill") as StyleBoxFlat
+    if fill!=null:
+        fill.bg_color=Color("#49BD89") if remaining>50 else (Color("#F0C14F") if remaining>25 else Color("#F47B72"))
+
 
 func play_move(slot: int) -> void:
     if player_index<0 or opponent_index<0 or busy or finished:
@@ -387,51 +456,80 @@ func play_move(slot: int) -> void:
     if slot<0 or slot>1 or (slot==1 and player_strong_rest>0):
         return
     busy=true
+    var token=turn_generation
+    _lock_attacks()
     var attacker: Dictionary=roster[player_index]
     var defender: Dictionary=roster[opponent_index]
     var result: Dictionary=Rules.strike(attacker,defender,slot,rng)
-    opponent_hp=Rules.clamp_health(opponent_hp,int(result["damage"]))
     player_strong_rest=1 if slot==1 else maxi(0,player_strong_rest-1)
-    var hint=_result_hint(result)
     last_damage=int(result["damage"])
     last_effect=str(result["type"])
-    last_message="%s %s！💥 -%d HP%s" % [
-        Rules.icon(str(result["type"])),str(result["name"]),last_damage,hint]
-    _battle()
-    if opponent_hp==0:
-        _finish(true)
-        if is_instance_valid(arena_node):
-            arena_node.play_impact(true,str(result["type"]),last_damage,float(result["effectiveness"]))
+    _set_battle_message("%s %s正在準備%s！✨" % [Rules.icon(last_effect),str(attacker["name"]),str(result["name"])])
+    await _narrate_and_wait("%s，使出%s！" % [str(attacker["name"]),str(result["name"])])
+    if not _turn_valid(token):
         return
-    if is_instance_valid(arena_node):
-        arena_node.play_impact(true,str(result["type"]),last_damage,float(result["effectiveness"]))
-    say_requested.emit("%s使出了%s！%s受到%d點傷害。%s" %
-        [str(attacker["name"]),str(result["name"]),str(defender["name"]),last_damage,_narrated_hint(result)])
-    await get_tree().create_timer(0.9).timeout
-    if not is_inside_tree() or finished:
+    if not is_instance_valid(arena_node):
         return
-    _cpu_turn()
+    await arena_node.play_attack_sequence(true,last_effect,last_damage,float(result["effectiveness"]),slot==1,quick_test_mode)
+    if not _turn_valid(token):
+        return
+    var old_hp=opponent_hp
+    opponent_hp=Rules.clamp_health(opponent_hp,last_damage)
+    _set_battle_message("%s %s！💥 -%d HP%s" % [
+        Rules.icon(last_effect),str(result["name"]),last_damage,_result_hint(result)])
+    await _animate_health(false,old_hp,opponent_hp)
+    if not _turn_valid(token):
+        return
+    if opponent_hp<=0:
+        _set_battle_message("💫 %s慢慢倒下了！" % str(defender["name"]))
+        await arena_node.play_fall_sequence(false,quick_test_mode)
+        if _turn_valid(token):
+            _finish(true)
+        return
+    await get_tree().create_timer(.07 if quick_test_mode else .62).timeout
+    if not _turn_valid(token):
+        return
+    await _cpu_turn()
+
 
 func _cpu_turn() -> void:
+    if player_index<0 or opponent_index<0 or finished or not is_inside_tree():
+        return
+    busy=true
+    _lock_attacks()
+    var token=turn_generation
+    var attacker: Dictionary=roster[opponent_index]
+    var defender: Dictionary=roster[player_index]
     var slot=1 if opponent_strong_rest==0 and rng.randf()<.45 else 0
-    var result: Dictionary=Rules.strike(roster[opponent_index],roster[player_index],slot,rng)
-    player_hp=Rules.clamp_health(player_hp,int(result["damage"]))
+    var result: Dictionary=Rules.strike(attacker,defender,slot,rng)
     opponent_strong_rest=1 if slot==1 else maxi(0,opponent_strong_rest-1)
     last_damage=int(result["damage"])
     last_effect=str(result["type"])
-    last_message="🤖 %s %s！💥 -%d HP%s" % [
-        Rules.icon(str(result["type"])),str(result["name"]),last_damage,_result_hint(result)]
-    if player_hp==0:
-        _finish(false)
-        if is_instance_valid(arena_node):
-            arena_node.play_impact(false,str(result["type"]),last_damage,float(result["effectiveness"]))
+    _set_battle_message("🤖 %s正在準備%s！" % [str(attacker["name"]),str(result["name"])])
+    await _narrate_and_wait("換%s了！使出%s！" % [str(attacker["name"]),str(result["name"])])
+    if not _turn_valid(token):
+        return
+    if not is_instance_valid(arena_node):
+        return
+    await arena_node.play_attack_sequence(false,last_effect,last_damage,float(result["effectiveness"]),slot==1,quick_test_mode)
+    if not _turn_valid(token):
+        return
+    var old_hp=player_hp
+    player_hp=Rules.clamp_health(player_hp,last_damage)
+    _set_battle_message("🤖 %s！💥 -%d HP%s" % [
+        str(result["name"]),last_damage,_result_hint(result)])
+    await _animate_health(true,old_hp,player_hp)
+    if not _turn_valid(token):
+        return
+    if player_hp<=0:
+        _set_battle_message("💫 %s慢慢倒下了！" % str(defender["name"]))
+        await arena_node.play_fall_sequence(true,quick_test_mode)
+        if _turn_valid(token):
+            _finish(false)
         return
     busy=false
+    _set_battle_message("🫶 輪到你了！選一個招式吧！")
     _battle()
-    if is_instance_valid(arena_node):
-        arena_node.play_impact(false,str(result["type"]),last_damage,float(result["effectiveness"]))
-    say_requested.emit("換%s囉！牠使出了%s！你受到%d點傷害。輪到你了！" %
-        [str(roster[opponent_index]["name"]),str(result["name"]),last_damage])
 
 func _result_hint(result: Dictionary) -> String:
     if float(result["effectiveness"])>1.0:
@@ -449,20 +547,16 @@ func _narrated_hint(result: Dictionary) -> String:
         return "對手擋住了一些傷害！"
     return ""
 
-func _flash(target: Control, type_name: String) -> void:
-    if not is_instance_valid(target):
-        return
-    var color=Rules.type_color(type_name)
-    var tween=create_tween()
-    tween.tween_property(target,"modulate",color,.13)
-    tween.tween_property(target,"modulate",LIGHT,.23)
-
 func _finish(player_won: bool) -> void:
+    if finished:
+        return
     finished=true
     busy=false
     var winner: Dictionary=roster[player_index if player_won else opponent_index]
     last_message="🏆 %s獲勝！🎉" % str(winner["name"]) if player_won else "💗 這次%s贏了，再玩一次吧！" % str(winner["name"])
     _battle()
+    if is_instance_valid(arena_node):
+        arena_node.apply_fallen_pose(not player_won)
     if player_won:
         win_recorded.emit(player_index)
         say_requested.emit("%s贏得對決！太棒了！按再戰一次還可以繼續玩！" % str(winner["name"]))
